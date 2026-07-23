@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notebooks } from "@/lib/db/schema";
 import { getUserId } from "@/lib/session";
@@ -12,7 +12,7 @@ export async function GET() {
     .select()
     .from(notebooks)
     .where(eq(notebooks.userId, userId))
-    .orderBy(desc(notebooks.createdAt));
+    .orderBy(asc(notebooks.sortOrder), desc(notebooks.createdAt));
 
   return NextResponse.json(rows);
 }

@@ -24,6 +24,8 @@ export function Sidebar({
   const [creating, setCreating] = useState(false);
   const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState("");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -60,6 +62,24 @@ export function Sidebar({
       router.push(`/notebooks/${notebook.id}`);
       router.refresh();
     }
+  }
+
+  async function handleDrop(targetId: string) {
+    setDragOverId(null);
+    const sourceId = draggedId;
+    setDraggedId(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const reordered = notebooks.map((n) => n.id).filter((id) => id !== sourceId);
+    const targetIndex = reordered.indexOf(targetId);
+    reordered.splice(targetIndex, 0, sourceId);
+
+    await fetch("/api/notebooks/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds: reordered }),
+    });
+    router.refresh();
   }
 
   function startRename(notebook: Notebook) {
@@ -224,7 +244,28 @@ export function Sidebar({
             }
 
             return (
-              <li key={notebook.id} className="group relative flex items-center">
+              <li
+                key={notebook.id}
+                draggable
+                onDragStart={() => setDraggedId(notebook.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverId !== notebook.id) setDragOverId(notebook.id);
+                }}
+                onDragEnd={() => {
+                  setDraggedId(null);
+                  setDragOverId(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(notebook.id);
+                }}
+                className={`group relative flex items-center rounded-md border-t-2 ${
+                  dragOverId === notebook.id && draggedId !== notebook.id
+                    ? "border-foreground/40"
+                    : "border-transparent"
+                } ${draggedId === notebook.id ? "opacity-40" : ""}`}
+              >
                 <Link
                   href={`/notebooks/${notebook.id}`}
                   className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${

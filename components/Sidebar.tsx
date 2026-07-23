@@ -10,20 +10,38 @@ type Notebook = {
   name: string;
 };
 
+type Note = {
+  id: string;
+  notebookId: string;
+  title: string;
+};
+
 export function Sidebar({
   notebooks,
+  notes,
   userName,
 }: {
   notebooks: Notebook[];
+  notes: Note[];
   userName: string;
 }) {
   const router = useRouter();
-  const params = useParams<{ notebookId?: string }>();
+  const params = useParams<{ notebookId?: string; noteId?: string }>();
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState("");
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  function toggleExpanded(notebookId: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(notebookId)) next.delete(notebookId);
+      else next.add(notebookId);
+      return next;
+    });
+  }
 
   useEffect(() => {
     const stored = localStorage.getItem("catat:sidebar-collapsed");
@@ -139,18 +157,53 @@ export function Sidebar({
 
       <nav className="flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-0.5">
-          {notebooks.map((notebook) => (
-            <li key={notebook.id}>
-              <Link
-                href={`/notebooks/${notebook.id}`}
-                className={`block truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
-                  params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
-                }`}
-              >
-                {notebook.name}
-              </Link>
-            </li>
-          ))}
+          {notebooks.map((notebook) => {
+            const expanded = expandedIds.has(notebook.id);
+            const notebookNotes = notes.filter((note) => note.notebookId === notebook.id);
+            return (
+              <li key={notebook.id}>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => toggleExpanded(notebook.id)}
+                    aria-label={expanded ? "Collapse notebook" : "Expand notebook"}
+                    aria-expanded={expanded}
+                    className="flex w-5 shrink-0 items-center justify-center text-foreground/40 hover:text-foreground"
+                  >
+                    {expanded ? "▾" : "▸"}
+                  </button>
+                  <Link
+                    href={`/notebooks/${notebook.id}`}
+                    className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
+                      params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
+                    }`}
+                  >
+                    {notebook.name}
+                  </Link>
+                </div>
+                {expanded && (
+                  <ul className="ml-5 flex flex-col gap-0.5 border-l border-foreground/10 pl-2">
+                    {notebookNotes.map((note) => (
+                      <li key={note.id}>
+                        <Link
+                          href={`/notes/${note.id}`}
+                          className={`block truncate rounded-md px-2 py-1 text-xs hover:bg-foreground/10 ${
+                            params?.noteId === note.id
+                              ? "bg-foreground/10 font-medium text-foreground"
+                              : "text-foreground/60"
+                          }`}
+                        >
+                          {note.title || "Untitled"}
+                        </Link>
+                      </li>
+                    ))}
+                    {notebookNotes.length === 0 && (
+                      <li className="px-2 py-1 text-xs text-foreground/40">No notes</li>
+                    )}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
           {notebooks.length === 0 && (
             <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
           )}

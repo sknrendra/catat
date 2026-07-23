@@ -24,6 +24,8 @@ export function Sidebar({
   const [creating, setCreating] = useState(false);
   const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("catat:sidebar-collapsed");
@@ -56,6 +58,28 @@ export function Sidebar({
       router.push(`/notebooks/${notebook.id}`);
       router.refresh();
     }
+  }
+
+  function startRename(notebook: Notebook) {
+    setRenamingId(notebook.id);
+    setRenameValue(notebook.name);
+  }
+
+  async function submitRename(e: React.FormEvent) {
+    e.preventDefault();
+    const name = renameValue.trim();
+    if (!name || !renamingId) {
+      setRenamingId(null);
+      return;
+    }
+    const id = renamingId;
+    setRenamingId(null);
+    await fetch(`/api/notebooks/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    router.refresh();
   }
 
   async function handleSignOut() {
@@ -139,18 +163,42 @@ export function Sidebar({
 
       <nav className="flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-0.5">
-          {notebooks.map((notebook) => (
-            <li key={notebook.id}>
-              <Link
-                href={`/notebooks/${notebook.id}`}
-                className={`block truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
-                  params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
-                }`}
-              >
-                {notebook.name}
-              </Link>
-            </li>
-          ))}
+          {notebooks.map((notebook) =>
+            renamingId === notebook.id ? (
+              <li key={notebook.id}>
+                <form onSubmit={submitRename} className="px-1">
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={submitRename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setRenamingId(null);
+                    }}
+                    className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm outline-none focus:border-foreground/60"
+                  />
+                </form>
+              </li>
+            ) : (
+              <li key={notebook.id} className="group flex items-center">
+                <Link
+                  href={`/notebooks/${notebook.id}`}
+                  className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
+                    params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
+                  }`}
+                >
+                  {notebook.name}
+                </Link>
+                <button
+                  onClick={() => startRename(notebook)}
+                  aria-label={`Rename ${notebook.name}`}
+                  className="shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 opacity-0 hover:bg-foreground/10 hover:text-foreground group-hover:opacity-100"
+                >
+                  ✎
+                </button>
+              </li>
+            ),
+          )}
           {notebooks.length === 0 && (
             <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
           )}

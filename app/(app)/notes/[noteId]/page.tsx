@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import type { JSONContent } from "@tiptap/core";
 import { db } from "@/lib/db";
-import { notes } from "@/lib/db/schema";
+import { notebooks, notes } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
 import { Editor } from "@/components/Editor";
 
@@ -22,12 +22,19 @@ export default async function NotePage({
 
   if (!note) notFound();
 
+  const notebookRows = await db
+    .select({ id: notebooks.id, name: notebooks.name })
+    .from(notebooks)
+    .where(eq(notebooks.userId, userId))
+    .orderBy(desc(notebooks.createdAt));
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <Editor
         key={note.id}
         noteId={note.id}
         notebookId={note.notebookId}
+        notebooks={notebookRows}
         initialTitle={note.title}
         initialContent={note.content as JSONContent}
       />

@@ -1,0 +1,171 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+
+type Notebook = {
+  id: string;
+  name: string;
+};
+
+export function Sidebar({
+  notebooks,
+  userName,
+}: {
+  notebooks: Notebook[];
+  userName: string;
+}) {
+  const router = useRouter();
+  const params = useParams<{ notebookId?: string }>();
+  const [collapsed, setCollapsed] = useState(false);
+  const [query, setQuery] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
+  const [newNotebookName, setNewNotebookName] = useState("");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("catat:sidebar-collapsed");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fold state only exists client-side
+    if (stored) setCollapsed(stored === "true");
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      localStorage.setItem("catat:sidebar-collapsed", String(!prev));
+      return !prev;
+    });
+  }
+
+  async function handleCreateNotebook(e: React.FormEvent) {
+    e.preventDefault();
+    const name = newNotebookName.trim();
+    if (!name) return;
+    setCreating(true);
+    const res = await fetch("/api/notebooks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    setCreating(false);
+    if (res.ok) {
+      const notebook = await res.json();
+      setNewNotebookName("");
+      setShowNewNotebookInput(false);
+      router.push(`/notebooks/${notebook.id}`);
+      router.refresh();
+    }
+  }
+
+  async function handleSignOut() {
+    await authClient.signOut();
+    router.push("/sign-in");
+    router.refresh();
+  }
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+  }
+
+  if (collapsed) {
+    return (
+      <div className="flex flex-col items-center gap-3 border-r border-foreground/10 px-2 py-3">
+        <button
+          onClick={toggleCollapsed}
+          aria-label="Expand sidebar"
+          className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+        >
+          »
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-64 shrink-0 flex-col border-r border-foreground/10 px-3 py-3">
+      <div className="mb-4 flex items-center justify-between">
+        <Link href="/" className="text-sm font-semibold tracking-tight">
+          Catat
+        </Link>
+        <button
+          onClick={toggleCollapsed}
+          aria-label="Collapse sidebar"
+          className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+        >
+          «
+        </button>
+      </div>
+
+      <form onSubmit={handleSearch} className="mb-4">
+        <input
+          type="search"
+          placeholder="Search notes…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1.5 text-sm outline-none focus:border-foreground/60"
+        />
+      </form>
+
+      <div className="mb-2 flex items-center justify-between px-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-foreground/50">
+          Notebooks
+        </span>
+        <button
+          onClick={() => setShowNewNotebookInput((prev) => !prev)}
+          aria-label="New notebook"
+          className="rounded-md px-1.5 text-sm hover:bg-foreground/10"
+        >
+          +
+        </button>
+      </div>
+
+      {showNewNotebookInput && (
+        <form onSubmit={handleCreateNotebook} className="mb-2 px-1">
+          <input
+            autoFocus
+            value={newNotebookName}
+            onChange={(e) => setNewNotebookName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setShowNewNotebookInput(false);
+            }}
+            placeholder="Notebook name"
+            disabled={creating}
+            className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm outline-none focus:border-foreground/60 disabled:opacity-50"
+          />
+        </form>
+      )}
+
+      <nav className="flex-1 overflow-y-auto">
+        <ul className="flex flex-col gap-0.5">
+          {notebooks.map((notebook) => (
+            <li key={notebook.id}>
+              <Link
+                href={`/notebooks/${notebook.id}`}
+                className={`block truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
+                  params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
+                }`}
+              >
+                {notebook.name}
+              </Link>
+            </li>
+          ))}
+          {notebooks.length === 0 && (
+            <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
+          )}
+        </ul>
+      </nav>
+
+      <div className="mt-3 flex items-center justify-between border-t border-foreground/10 pt-3">
+        <span className="truncate text-sm text-foreground/60">{userName}</span>
+        <button
+          onClick={handleSignOut}
+          className="shrink-0 rounded-md px-2 py-1 text-xs hover:bg-foreground/10"
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Catat
 
-## Getting Started
+A personal notetaking app: rich-text notes (bold/italic/underline, ordered and
+unordered lists, a title, and H1–H6 headings) organized into notebooks, with
+image/file attachments, running on Next.js + SQLite + MinIO, behind Caddy for
+HTTPS, all via Docker Compose.
 
-First, run the development server:
+## Running it
+
+1. Copy the environment template and fill in real values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   - `BETTER_AUTH_SECRET`: generate with `openssl rand -base64 32`
+   - `MINIO_ROOT_PASSWORD`: pick a long random password
+   - Leave `BETTER_AUTH_URL` and `SITE_ADDRESS` as `localhost` for local use
+
+2. Start the stack:
+
+   ```bash
+   docker compose up --build
+   ```
+
+3. Open <https://localhost>. Caddy serves a locally-trusted HTTPS certificate
+   for `localhost`; your browser may still show a warning the first time
+   unless you [trust Caddy's local CA](https://caddyserver.com/docs/automatic-https#local-https)
+   (`docker compose exec caddy caddy trust`, then follow the printed
+   instructions for your OS).
+
+4. Sign up for the one account you'll use, create a notebook, and start
+   writing.
+
+Data persists in named Docker volumes (`sqlite-data`, `minio-data`,
+`caddy-data`/`caddy-config`) across `docker compose down` / `up`. Use
+`docker compose down -v` to wipe everything.
+
+## Deploying to a real domain
+
+Set `SITE_ADDRESS` in `.env` to your domain (e.g. `notes.example.com`) and
+`BETTER_AUTH_URL` to `https://notes.example.com`, point DNS at the host, and
+make sure ports 80/443 are reachable — Caddy will automatically obtain a real
+Let's Encrypt certificate instead of the local one.
+
+## Adding OAuth sign-in later
+
+Email/password sign-in is enabled by default. To add an OAuth provider (e.g.
+Google), add its client id/secret to `.env`, then populate the
+`socialProviders` option in `lib/auth.ts` — no schema changes needed.
+
+## Local development (without Docker)
 
 ```bash
+npm install
+cp .env.example .env   # then edit DATABASE_PATH to something like ./data/catat.db
+npx drizzle-kit migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+You'll also need a MinIO instance reachable at the `MINIO_*` env vars for
+image/file uploads to work; everything else runs without it.

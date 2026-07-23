@@ -32,6 +32,16 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local sqlite database
+/data
+
+# local port overrides for docker compose (host-specific, not part of the deliverable)
+docker-compose.override.yml
+
+# local tooling state
+.claude/
 
 # vercel
 .vercel

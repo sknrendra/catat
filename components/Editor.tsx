@@ -117,10 +117,10 @@ export function Editor({
             value={currentNotebookId}
             onChange={(e) => handleNotebookChange(e.target.value)}
             aria-label="Notebook"
-            className="rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-xs outline-none focus:border-foreground/60"
+            className="rounded-md border border-foreground/20 bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-foreground/60"
           >
             {notebooks.map((notebook) => (
-              <option key={notebook.id} value={notebook.id}>
+              <option key={notebook.id} value={notebook.id} className="bg-background text-foreground">
                 {notebook.name}
               </option>
             ))}
@@ -177,11 +177,13 @@ function Toolbar({
               .run();
           }
         }}
-        className="mr-2 rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm"
+        className="mr-2 rounded-md border border-foreground/20 bg-background px-2 py-1 text-sm text-foreground"
       >
-        <option value="paragraph">Paragraph</option>
+        <option value="paragraph" className="bg-background text-foreground">
+          Paragraph
+        </option>
         {HEADING_LEVELS.map((level) => (
-          <option key={level} value={level}>
+          <option key={level} value={level} className="bg-background text-foreground">
             Heading {level}
           </option>
         ))}

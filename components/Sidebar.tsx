@@ -26,6 +26,10 @@ export function Sidebar({
   const [newNotebookName, setNewNotebookName] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("catat:sidebar-collapsed");
@@ -75,6 +79,41 @@ export function Sidebar({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderedIds: reordered }),
     });
+    router.refresh();
+  }
+
+  function startRename(notebook: Notebook) {
+    setOpenMenuId(null);
+    setRenamingId(notebook.id);
+    setRenameValue(notebook.name);
+  }
+
+  async function submitRename(e: React.FormEvent) {
+    e.preventDefault();
+    const name = renameValue.trim();
+    if (!name || !renamingId) {
+      setRenamingId(null);
+      return;
+    }
+    const id = renamingId;
+    setRenamingId(null);
+    await fetch(`/api/notebooks/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    router.refresh();
+  }
+
+  function startDelete(notebook: Notebook) {
+    setOpenMenuId(null);
+    setConfirmingDeleteId(notebook.id);
+  }
+
+  async function handleDeleteNotebook(notebook: Notebook) {
+    setConfirmingDeleteId(null);
+    await fetch(`/api/notebooks/${notebook.id}`, { method: "DELETE" });
+    if (params?.notebookId === notebook.id) router.push("/");
     router.refresh();
   }
 
@@ -159,39 +198,120 @@ export function Sidebar({
 
       <nav className="flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-0.5">
-          {notebooks.map((notebook) => (
-            <li
-              key={notebook.id}
-              draggable
-              onDragStart={() => setDraggedId(notebook.id)}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (dragOverId !== notebook.id) setDragOverId(notebook.id);
-              }}
-              onDragEnd={() => {
-                setDraggedId(null);
-                setDragOverId(null);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleDrop(notebook.id);
-              }}
-              className={`rounded-md border-t-2 ${
-                dragOverId === notebook.id && draggedId !== notebook.id
-                  ? "border-foreground/40"
-                  : "border-transparent"
-              } ${draggedId === notebook.id ? "opacity-40" : ""}`}
-            >
-              <Link
-                href={`/notebooks/${notebook.id}`}
-                className={`block truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
-                  params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
-                }`}
+          {notebooks.map((notebook) => {
+            if (renamingId === notebook.id) {
+              return (
+                <li key={notebook.id}>
+                  <form onSubmit={submitRename} className="px-1">
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={submitRename}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setRenamingId(null);
+                      }}
+                      className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm outline-none focus:border-foreground/60"
+                    />
+                  </form>
+                </li>
+              );
+            }
+
+            if (confirmingDeleteId === notebook.id) {
+              return (
+                <li
+                  key={notebook.id}
+                  className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs"
+                >
+                  <span className="truncate text-foreground/60">Delete “{notebook.name}”?</span>
+                  <span className="flex shrink-0 gap-1">
+                    <button
+                      onClick={() => handleDeleteNotebook(notebook)}
+                      className="rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => setConfirmingDeleteId(null)}
+                      className="rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                </li>
+              );
+            }
+
+            return (
+              <li
+                key={notebook.id}
+                draggable
+                onDragStart={() => setDraggedId(notebook.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverId !== notebook.id) setDragOverId(notebook.id);
+                }}
+                onDragEnd={() => {
+                  setDraggedId(null);
+                  setDragOverId(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(notebook.id);
+                }}
+                className={`group relative flex items-center rounded-md border-t-2 ${
+                  dragOverId === notebook.id && draggedId !== notebook.id
+                    ? "border-foreground/40"
+                    : "border-transparent"
+                } ${draggedId === notebook.id ? "opacity-40" : ""}`}
               >
-                {notebook.name}
-              </Link>
-            </li>
-          ))}
+                <Link
+                  href={`/notebooks/${notebook.id}`}
+                  className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
+                    params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
+                  }`}
+                >
+                  {notebook.name}
+                </Link>
+                <button
+                  onClick={() => setOpenMenuId((prev) => (prev === notebook.id ? null : notebook.id))}
+                  aria-label={`Options for ${notebook.name}`}
+                  className={`shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
+                    openMenuId === notebook.id ? "" : "opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  ⋯
+                </button>
+
+                {openMenuId === notebook.id && (
+                  <>
+                    {/* Click-outside catcher */}
+                    <button
+                      aria-hidden
+                      tabIndex={-1}
+                      className="fixed inset-0 z-10 cursor-default"
+                      onClick={() => setOpenMenuId(null)}
+                    />
+                    <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
+                      <button
+                        onClick={() => startRename(notebook)}
+                        className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        onClick={() => startDelete(notebook)}
+                        className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            );
+          })}
           {notebooks.length === 0 && (
             <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
           )}

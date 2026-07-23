@@ -24,6 +24,8 @@ export function Sidebar({
   const [creating, setCreating] = useState(false);
   const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState("");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("catat:sidebar-collapsed");
@@ -56,6 +58,24 @@ export function Sidebar({
       router.push(`/notebooks/${notebook.id}`);
       router.refresh();
     }
+  }
+
+  async function handleDrop(targetId: string) {
+    setDragOverId(null);
+    const sourceId = draggedId;
+    setDraggedId(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const reordered = notebooks.map((n) => n.id).filter((id) => id !== sourceId);
+    const targetIndex = reordered.indexOf(targetId);
+    reordered.splice(targetIndex, 0, sourceId);
+
+    await fetch("/api/notebooks/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds: reordered }),
+    });
+    router.refresh();
   }
 
   async function handleSignOut() {
@@ -140,7 +160,28 @@ export function Sidebar({
       <nav className="flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-0.5">
           {notebooks.map((notebook) => (
-            <li key={notebook.id}>
+            <li
+              key={notebook.id}
+              draggable
+              onDragStart={() => setDraggedId(notebook.id)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (dragOverId !== notebook.id) setDragOverId(notebook.id);
+              }}
+              onDragEnd={() => {
+                setDraggedId(null);
+                setDragOverId(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(notebook.id);
+              }}
+              className={`rounded-md border-t-2 ${
+                dragOverId === notebook.id && draggedId !== notebook.id
+                  ? "border-foreground/40"
+                  : "border-transparent"
+              } ${draggedId === notebook.id ? "opacity-40" : ""}`}
+            >
               <Link
                 href={`/notebooks/${notebook.id}`}
                 className={`block truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${

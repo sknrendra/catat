@@ -10,26 +10,44 @@ type Notebook = {
   name: string;
 };
 
+type Note = {
+  id: string;
+  notebookId: string;
+  title: string;
+};
+
 export function Sidebar({
   notebooks,
+  notes,
   userName,
 }: {
   notebooks: Notebook[];
+  notes: Note[];
   userName: string;
 }) {
   const router = useRouter();
-  const params = useParams<{ notebookId?: string }>();
+  const params = useParams<{ notebookId?: string; noteId?: string }>();
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState("");
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
+  function toggleExpanded(notebookId: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(notebookId)) next.delete(notebookId);
+      else next.add(notebookId);
+      return next;
+    });
+  }
 
   useEffect(() => {
     const stored = localStorage.getItem("catat:sidebar-collapsed");
@@ -243,6 +261,9 @@ export function Sidebar({
               );
             }
 
+            const expanded = expandedIds.has(notebook.id);
+            const notebookNotes = notes.filter((note) => note.notebookId === notebook.id);
+
             return (
               <li
                 key={notebook.id}
@@ -260,54 +281,87 @@ export function Sidebar({
                   e.preventDefault();
                   handleDrop(notebook.id);
                 }}
-                className={`group relative flex items-center rounded-md border-t-2 ${
+                className={`group relative rounded-md border-t-2 ${
                   dragOverId === notebook.id && draggedId !== notebook.id
                     ? "border-foreground/40"
                     : "border-transparent"
                 } ${draggedId === notebook.id ? "opacity-40" : ""}`}
               >
-                <Link
-                  href={`/notebooks/${notebook.id}`}
-                  className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
-                    params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
-                  }`}
-                >
-                  {notebook.name}
-                </Link>
-                <button
-                  onClick={() => setOpenMenuId((prev) => (prev === notebook.id ? null : notebook.id))}
-                  aria-label={`Options for ${notebook.name}`}
-                  className={`shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
-                    openMenuId === notebook.id ? "" : "opacity-0 group-hover:opacity-100"
-                  }`}
-                >
-                  ⋯
-                </button>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => toggleExpanded(notebook.id)}
+                    aria-label={expanded ? "Collapse notebook" : "Expand notebook"}
+                    aria-expanded={expanded}
+                    className="flex w-5 shrink-0 items-center justify-center text-foreground/40 hover:text-foreground"
+                  >
+                    {expanded ? "▾" : "▸"}
+                  </button>
+                  <Link
+                    href={`/notebooks/${notebook.id}`}
+                    className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
+                      params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
+                    }`}
+                  >
+                    {notebook.name}
+                  </Link>
+                  <button
+                    onClick={() =>
+                      setOpenMenuId((prev) => (prev === notebook.id ? null : notebook.id))
+                    }
+                    aria-label={`Options for ${notebook.name}`}
+                    className={`shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
+                      openMenuId === notebook.id ? "" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
+                    ⋯
+                  </button>
 
-                {openMenuId === notebook.id && (
-                  <>
-                    {/* Click-outside catcher */}
-                    <button
-                      aria-hidden
-                      tabIndex={-1}
-                      className="fixed inset-0 z-10 cursor-default"
-                      onClick={() => setOpenMenuId(null)}
-                    />
-                    <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
+                  {openMenuId === notebook.id && (
+                    <>
+                      {/* Click-outside catcher */}
                       <button
-                        onClick={() => startRename(notebook)}
-                        className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
-                      >
-                        Rename
-                      </button>
-                      <button
-                        onClick={() => startDelete(notebook)}
-                        className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </>
+                        aria-hidden
+                        tabIndex={-1}
+                        className="fixed inset-0 z-10 cursor-default"
+                        onClick={() => setOpenMenuId(null)}
+                      />
+                      <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
+                        <button
+                          onClick={() => startRename(notebook)}
+                          className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                        >
+                          Rename
+                        </button>
+                        <button
+                          onClick={() => startDelete(notebook)}
+                          className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {expanded && (
+                  <ul className="ml-5 flex flex-col gap-0.5 border-l border-foreground/10 pl-2">
+                    {notebookNotes.map((note) => (
+                      <li key={note.id}>
+                        <Link
+                          href={`/notes/${note.id}`}
+                          className={`block truncate rounded-md px-2 py-1 text-xs hover:bg-foreground/10 ${
+                            params?.noteId === note.id
+                              ? "bg-foreground/10 font-medium text-foreground"
+                              : "text-foreground/60"
+                          }`}
+                        >
+                          {note.title || "Untitled"}
+                        </Link>
+                      </li>
+                    ))}
+                    {notebookNotes.length === 0 && (
+                      <li className="px-2 py-1 text-xs text-foreground/40">No notes</li>
+                    )}
+                  </ul>
                 )}
               </li>
             );

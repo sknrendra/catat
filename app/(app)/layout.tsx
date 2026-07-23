@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notebooks, notes } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .select()
     .from(notebooks)
     .where(eq(notebooks.userId, userId))
-    .orderBy(desc(notebooks.createdAt));
+    .orderBy(asc(notebooks.sortOrder), desc(notebooks.createdAt));
 
   const noteRows = await db
     .select({

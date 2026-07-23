@@ -24,16 +24,19 @@ function useDebouncedCallback<T extends (...args: never[]) => void>(fn: T, delay
 export function Editor({
   noteId,
   notebookId,
+  notebooks,
   initialTitle,
   initialContent,
 }: {
   noteId: string;
   notebookId: string;
+  notebooks: { id: string; name: string }[];
   initialTitle: string;
   initialContent: JSONContent;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
+  const [currentNotebookId, setCurrentNotebookId] = useState(notebookId);
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +73,16 @@ export function Editor({
     savePatch({ title: value });
   }
 
+  async function handleNotebookChange(newNotebookId: string) {
+    setCurrentNotebookId(newNotebookId);
+    await fetch(`/api/notes/${noteId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notebookId: newNotebookId }),
+    });
+    router.refresh();
+  }
+
   async function handleImageUpload(file: File) {
     const form = new FormData();
     form.append("file", file);
@@ -84,7 +97,7 @@ export function Editor({
 
   async function handleDelete() {
     await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
-    router.push(`/notebooks/${notebookId}`);
+    router.push(`/notebooks/${currentNotebookId}`);
     router.refresh();
   }
 
@@ -100,6 +113,18 @@ export function Editor({
           className="w-full bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-foreground/30"
         />
         <div className="flex shrink-0 items-center gap-3 pt-2">
+          <select
+            value={currentNotebookId}
+            onChange={(e) => handleNotebookChange(e.target.value)}
+            aria-label="Notebook"
+            className="rounded-md border border-foreground/20 bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-foreground/60"
+          >
+            {notebooks.map((notebook) => (
+              <option key={notebook.id} value={notebook.id} className="bg-background text-foreground">
+                {notebook.name}
+              </option>
+            ))}
+          </select>
           <span className="text-xs text-foreground/40">
             {saveState === "saving" ? "Saving…" : "Saved"}
           </span>
@@ -152,11 +177,13 @@ function Toolbar({
               .run();
           }
         }}
-        className="mr-2 rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm"
+        className="mr-2 rounded-md border border-foreground/20 bg-background px-2 py-1 text-sm text-foreground"
       >
-        <option value="paragraph">Paragraph</option>
+        <option value="paragraph" className="bg-background text-foreground">
+          Paragraph
+        </option>
         {HEADING_LEVELS.map((level) => (
-          <option key={level} value={level}>
+          <option key={level} value={level} className="bg-background text-foreground">
             Heading {level}
           </option>
         ))}

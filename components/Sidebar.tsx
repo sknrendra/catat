@@ -24,6 +24,7 @@ export function Sidebar({
   const [creating, setCreating] = useState(false);
   const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState("");
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("catat:sidebar-collapsed");
@@ -56,6 +57,13 @@ export function Sidebar({
       router.push(`/notebooks/${notebook.id}`);
       router.refresh();
     }
+  }
+
+  async function handleDeleteNotebook(notebook: Notebook) {
+    setConfirmingDeleteId(null);
+    await fetch(`/api/notebooks/${notebook.id}`, { method: "DELETE" });
+    if (params?.notebookId === notebook.id) router.push("/");
+    router.refresh();
   }
 
   async function handleSignOut() {
@@ -139,18 +147,48 @@ export function Sidebar({
 
       <nav className="flex-1 overflow-y-auto">
         <ul className="flex flex-col gap-0.5">
-          {notebooks.map((notebook) => (
-            <li key={notebook.id}>
-              <Link
-                href={`/notebooks/${notebook.id}`}
-                className={`block truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
-                  params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
-                }`}
+          {notebooks.map((notebook) =>
+            confirmingDeleteId === notebook.id ? (
+              <li
+                key={notebook.id}
+                className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs"
               >
-                {notebook.name}
-              </Link>
-            </li>
-          ))}
+                <span className="truncate text-foreground/60">Delete “{notebook.name}”?</span>
+                <span className="flex shrink-0 gap-1">
+                  <button
+                    onClick={() => handleDeleteNotebook(notebook)}
+                    className="rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDeleteId(null)}
+                    className="rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              </li>
+            ) : (
+              <li key={notebook.id} className="group flex items-center">
+                <Link
+                  href={`/notebooks/${notebook.id}`}
+                  className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
+                    params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
+                  }`}
+                >
+                  {notebook.name}
+                </Link>
+                <button
+                  onClick={() => setConfirmingDeleteId(notebook.id)}
+                  aria-label={`Delete ${notebook.name}`}
+                  className="shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 opacity-0 hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100"
+                >
+                  ✕
+                </button>
+              </li>
+            ),
+          )}
           {notebooks.length === 0 && (
             <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
           )}

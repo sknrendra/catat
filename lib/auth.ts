@@ -20,12 +20,16 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      await resend.emails.send({
+      const { error } = await resend.emails.send({
         from: process.env.EMAIL_FROM!,
         to: user.email,
         subject: "Verify your email for Catat",
         html: `<p>Click the link below to verify your email and finish setting up your Catat account.</p><p><a href="${url}">Verify email</a></p><p>If you didn't request this, you can ignore this email.</p>`,
       });
+      if (error) {
+        console.error("Failed to send verification email:", error);
+        throw new Error(`Failed to send verification email: ${error.message}`);
+      }
     },
   },
   databaseHooks: {

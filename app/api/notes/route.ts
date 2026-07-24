@@ -32,17 +32,33 @@ export async function POST(request: NextRequest) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
-  const notebookId = typeof body.notebookId === "string" ? body.notebookId : "";
-  if (!notebookId) {
-    return NextResponse.json({ error: "notebookId is required" }, { status: 400 });
-  }
+  const body = await request.json().catch(() => ({}));
+  let notebookId = typeof body.notebookId === "string" ? body.notebookId : "";
 
-  const [notebook] = await db
-    .select({ id: notebooks.id })
-    .from(notebooks)
-    .where(and(eq(notebooks.id, notebookId), eq(notebooks.userId, userId)));
-  if (!notebook) return NextResponse.json({ error: "Notebook not found" }, { status: 404 });
+  if (notebookId) {
+    const [notebook] = await db
+      .select({ id: notebooks.id })
+      .from(notebooks)
+      .where(and(eq(notebooks.id, notebookId), eq(notebooks.userId, userId)));
+    if (!notebook) return NextResponse.json({ error: "Notebook not found" }, { status: 404 });
+  } else {
+    // No notebook specified: file it under "General", creating that
+    // notebook first if this user doesn't have one (e.g. it was renamed
+    // or deleted since sign-up).
+    const [general] = await db
+      .select({ id: notebooks.id })
+      .from(notebooks)
+      .where(and(eq(notebooks.userId, userId), eq(notebooks.name, "General")));
+    if (general) {
+      notebookId = general.id;
+    } else {
+      const [created] = await db
+        .insert(notebooks)
+        .values({ id: crypto.randomUUID(), userId, name: "General" })
+        .returning({ id: notebooks.id });
+      notebookId = created.id;
+    }
+  }
 
   const [note] = await db
     .insert(notes)

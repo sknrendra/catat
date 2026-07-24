@@ -332,12 +332,14 @@ export function Sidebar({
                         >
                           Rename
                         </button>
-                        <button
-                          onClick={() => startDelete(notebook)}
-                          className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
-                        >
-                          Delete
-                        </button>
+                        {notebook.name !== "General" && (
+                          <button
+                            onClick={() => startDelete(notebook)}
+                            className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </>
                   )}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { notes } from "@/lib/db/schema";
+import { notebooks, notes } from "@/lib/db/schema";
 import { getUserId } from "@/lib/session";
 
 export async function GET(
@@ -31,9 +31,17 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
 
-  const updates: Partial<{ title: string; content: unknown }> = {};
+  const updates: Partial<{ title: string; content: unknown; notebookId: string }> = {};
   if (typeof body.title === "string") updates.title = body.title;
   if (body.content !== undefined) updates.content = body.content;
+  if (typeof body.notebookId === "string") {
+    const [notebook] = await db
+      .select({ id: notebooks.id })
+      .from(notebooks)
+      .where(and(eq(notebooks.id, body.notebookId), eq(notebooks.userId, userId)));
+    if (!notebook) return NextResponse.json({ error: "Notebook not found" }, { status: 404 });
+    updates.notebookId = body.notebookId;
+  }
 
   const [note] = await db
     .update(notes)

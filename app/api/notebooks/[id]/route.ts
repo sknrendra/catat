@@ -34,11 +34,22 @@ export async function DELETE(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const [notebook] = await db
-    .delete(notebooks)
-    .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)))
-    .returning();
+  const [existing] = await db
+    .select({ name: notebooks.name })
+    .from(notebooks)
+    .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)));
 
-  if (!notebook) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (existing.name === "General") {
+    // Notes created without an explicit notebook always land in "General"
+    // (see POST /api/notes) — keeping one around means that always works.
+    return NextResponse.json(
+      { error: "The General notebook can't be deleted" },
+      { status: 400 },
+    );
+  }
+
+  await db.delete(notebooks).where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)));
+
   return NextResponse.json({ success: true });
 }

@@ -192,6 +192,14 @@ export function Sidebar({
           />
         </form>
 
+        <Link
+          href="/projects"
+          onClick={onNavigate}
+          className="mb-4 block rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10"
+        >
+          Projects
+        </Link>
+
         <div className="mb-2 flex items-center justify-between px-1">
           <span className="text-xs font-medium uppercase tracking-wide text-foreground/50">
             Notebooks

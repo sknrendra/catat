@@ -15,6 +15,13 @@
       "when": 1784821173588,
       "tag": "0001_lyrical_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784908571971,
+      "tag": "0002_superb_mach_iv",
+      "breakpoints": true
     }
   ]
 }

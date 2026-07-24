@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
 export default function SignUpPage() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,8 +22,23 @@ export default function SignUpPage() {
       setError(error.message ?? "Could not sign up");
       return;
     }
-    router.push("/");
-    router.refresh();
+    setSubmitted(true);
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex flex-col gap-3 text-center">
+        <p className="text-sm">
+          Check <span className="font-medium">{email}</span> for a verification link to finish
+          setting up your account.
+        </p>
+        <p className="text-sm text-foreground/60">
+          <Link href="/sign-in" className="underline">
+            Back to sign in
+          </Link>
+        </p>
+      </div>
+    );
   }
 
   return (

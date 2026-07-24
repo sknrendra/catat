@@ -10,20 +10,31 @@ export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsVerification(false);
+    setResendState("idle");
     setLoading(true);
     const { error } = await authClient.signIn.email({ email, password });
     setLoading(false);
     if (error) {
       setError(error.message ?? "Could not sign in");
+      if (error.code === "EMAIL_NOT_VERIFIED") setNeedsVerification(true);
       return;
     }
     router.push("/");
     router.refresh();
+  }
+
+  async function handleResendVerification() {
+    setResendState("sending");
+    await authClient.sendVerificationEmail({ email });
+    setResendState("sent");
   }
 
   return (
@@ -55,6 +66,22 @@ export default function SignInPage() {
         />
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
+      {needsVerification && (
+        <p className="text-sm text-foreground/60">
+          {resendState === "sent" ? (
+            "Verification email sent — check your inbox."
+          ) : (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendState === "sending"}
+              className="underline disabled:opacity-50"
+            >
+              {resendState === "sending" ? "Sending…" : "Resend verification email"}
+            </button>
+          )}
+        </p>
+      )}
       <button
         type="submit"
         disabled={loading}

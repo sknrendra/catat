@@ -64,7 +64,7 @@ export function Editor({
     editorProps: {
       attributes: {
         class:
-          "prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[50vh] prose-li:my-1",
+          "prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[50vh] prose-li:my-0.5 [&_li_p]:my-0",
       },
     },
   });

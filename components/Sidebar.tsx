@@ -28,6 +28,7 @@ export function Sidebar({
   const router = useRouter();
   const params = useParams<{ notebookId?: string; noteId?: string }>();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [showNewNotebookInput, setShowNewNotebookInput] = useState(false);
@@ -143,246 +144,306 @@ export function Sidebar({
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (query.trim()) router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+    if (query.trim()) {
+      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      setMobileOpen(false);
+    }
   }
 
-  if (collapsed) {
+  function renderBody({
+    onNavigate,
+    headerAction,
+  }: {
+    onNavigate: () => void;
+    headerAction: "collapse" | "close";
+  }) {
     return (
-      <div className="flex flex-col items-center gap-3 border-r border-foreground/10 px-2 py-3">
-        <button
-          onClick={toggleCollapsed}
-          aria-label="Expand sidebar"
-          className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
-        >
-          »
-        </button>
-      </div>
+      <>
+        <div className="mb-4 flex items-center justify-between">
+          <Link href="/" className="text-sm font-semibold tracking-tight" onClick={onNavigate}>
+            Catat
+          </Link>
+          {headerAction === "collapse" ? (
+            <button
+              onClick={toggleCollapsed}
+              aria-label="Collapse sidebar"
+              className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+            >
+              «
+            </button>
+          ) : (
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close sidebar"
+              className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        <form onSubmit={handleSearch} className="mb-4">
+          <input
+            type="search"
+            placeholder="Search notes…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1.5 text-sm outline-none focus:border-foreground/60"
+          />
+        </form>
+
+        <div className="mb-2 flex items-center justify-between px-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-foreground/50">
+            Notebooks
+          </span>
+          <button
+            onClick={() => setShowNewNotebookInput((prev) => !prev)}
+            aria-label="New notebook"
+            className="rounded-md px-1.5 text-sm hover:bg-foreground/10"
+          >
+            +
+          </button>
+        </div>
+
+        {showNewNotebookInput && (
+          <form onSubmit={handleCreateNotebook} className="mb-2 px-1">
+            <input
+              autoFocus
+              value={newNotebookName}
+              onChange={(e) => setNewNotebookName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setShowNewNotebookInput(false);
+              }}
+              placeholder="Notebook name"
+              disabled={creating}
+              className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm outline-none focus:border-foreground/60 disabled:opacity-50"
+            />
+          </form>
+        )}
+
+        <nav className="flex-1 overflow-y-auto">
+          <ul className="flex flex-col gap-0.5">
+            {notebooks.map((notebook) => {
+              if (renamingId === notebook.id) {
+                return (
+                  <li key={notebook.id}>
+                    <form onSubmit={submitRename} className="px-1">
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onBlur={submitRename}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setRenamingId(null);
+                        }}
+                        className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm outline-none focus:border-foreground/60"
+                      />
+                    </form>
+                  </li>
+                );
+              }
+
+              if (confirmingDeleteId === notebook.id) {
+                return (
+                  <li
+                    key={notebook.id}
+                    className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs"
+                  >
+                    <span className="truncate text-foreground/60">
+                      Delete “{notebook.name}”?
+                    </span>
+                    <span className="flex shrink-0 gap-1">
+                      <button
+                        onClick={() => handleDeleteNotebook(notebook)}
+                        className="rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirmingDeleteId(null)}
+                        className="rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  </li>
+                );
+              }
+
+              const expanded = expandedIds.has(notebook.id);
+              const notebookNotes = notes.filter((note) => note.notebookId === notebook.id);
+
+              return (
+                <li
+                  key={notebook.id}
+                  draggable
+                  onDragStart={() => setDraggedId(notebook.id)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (dragOverId !== notebook.id) setDragOverId(notebook.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setDragOverId(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDrop(notebook.id);
+                  }}
+                  className={`group relative rounded-md border-t-2 ${
+                    dragOverId === notebook.id && draggedId !== notebook.id
+                      ? "border-foreground/40"
+                      : "border-transparent"
+                  } ${draggedId === notebook.id ? "opacity-40" : ""}`}
+                >
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => toggleExpanded(notebook.id)}
+                      aria-label={expanded ? "Collapse notebook" : "Expand notebook"}
+                      aria-expanded={expanded}
+                      className="flex w-5 shrink-0 items-center justify-center text-foreground/40 hover:text-foreground"
+                    >
+                      {expanded ? "▾" : "▸"}
+                    </button>
+                    <Link
+                      href={`/notebooks/${notebook.id}`}
+                      onClick={onNavigate}
+                      className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
+                        params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
+                      }`}
+                    >
+                      {notebook.name}
+                    </Link>
+                    <button
+                      onClick={() =>
+                        setOpenMenuId((prev) => (prev === notebook.id ? null : notebook.id))
+                      }
+                      aria-label={`Options for ${notebook.name}`}
+                      className={`shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
+                        openMenuId === notebook.id ? "" : "opacity-0 group-hover:opacity-100"
+                      }`}
+                    >
+                      ⋯
+                    </button>
+
+                    {openMenuId === notebook.id && (
+                      <>
+                        {/* Click-outside catcher */}
+                        <button
+                          aria-hidden
+                          tabIndex={-1}
+                          className="fixed inset-0 z-10 cursor-default"
+                          onClick={() => setOpenMenuId(null)}
+                        />
+                        <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
+                          <button
+                            onClick={() => startRename(notebook)}
+                            className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                          >
+                            Rename
+                          </button>
+                          {notebook.name !== "General" && (
+                            <button
+                              onClick={() => startDelete(notebook)}
+                              className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {expanded && (
+                    <ul className="ml-5 flex flex-col gap-0.5 border-l border-foreground/10 pl-2">
+                      {notebookNotes.map((note) => (
+                        <li key={note.id}>
+                          <Link
+                            href={`/notes/${note.id}`}
+                            onClick={onNavigate}
+                            className={`block truncate rounded-md px-2 py-1 text-xs hover:bg-foreground/10 ${
+                              params?.noteId === note.id
+                                ? "bg-foreground/10 font-medium text-foreground"
+                                : "text-foreground/60"
+                            }`}
+                          >
+                            {note.title || "Untitled"}
+                          </Link>
+                        </li>
+                      ))}
+                      {notebookNotes.length === 0 && (
+                        <li className="px-2 py-1 text-xs text-foreground/40">No notes</li>
+                      )}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+            {notebooks.length === 0 && (
+              <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
+            )}
+          </ul>
+        </nav>
+
+        <div className="mt-3 flex items-center justify-between border-t border-foreground/10 pt-3">
+          <span className="truncate text-sm text-foreground/60">{userName}</span>
+          <button
+            onClick={handleSignOut}
+            className="shrink-0 rounded-md px-2 py-1 text-xs hover:bg-foreground/10"
+          >
+            Sign out
+          </button>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="flex w-64 shrink-0 flex-col border-r border-foreground/10 px-3 py-3">
-      <div className="mb-4 flex items-center justify-between">
-        <Link href="/" className="text-sm font-semibold tracking-tight">
-          Catat
-        </Link>
-        <button
-          onClick={toggleCollapsed}
-          aria-label="Collapse sidebar"
-          className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
-        >
-          «
-        </button>
-      </div>
+    <>
+      {/* Mobile hamburger toggle */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open sidebar"
+        className="fixed left-3 top-3 z-30 rounded-md border border-foreground/20 bg-background px-2 py-1 text-sm shadow-sm md:hidden"
+      >
+        ☰
+      </button>
 
-      <form onSubmit={handleSearch} className="mb-4">
-        <input
-          type="search"
-          placeholder="Search notes…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1.5 text-sm outline-none focus:border-foreground/60"
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <button
+          aria-hidden
+          tabIndex={-1}
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 cursor-default bg-black/40 md:hidden"
         />
-      </form>
-
-      <div className="mb-2 flex items-center justify-between px-1">
-        <span className="text-xs font-medium uppercase tracking-wide text-foreground/50">
-          Notebooks
-        </span>
-        <button
-          onClick={() => setShowNewNotebookInput((prev) => !prev)}
-          aria-label="New notebook"
-          className="rounded-md px-1.5 text-sm hover:bg-foreground/10"
-        >
-          +
-        </button>
-      </div>
-
-      {showNewNotebookInput && (
-        <form onSubmit={handleCreateNotebook} className="mb-2 px-1">
-          <input
-            autoFocus
-            value={newNotebookName}
-            onChange={(e) => setNewNotebookName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setShowNewNotebookInput(false);
-            }}
-            placeholder="Notebook name"
-            disabled={creating}
-            className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm outline-none focus:border-foreground/60 disabled:opacity-50"
-          />
-        </form>
       )}
 
-      <nav className="flex-1 overflow-y-auto">
-        <ul className="flex flex-col gap-0.5">
-          {notebooks.map((notebook) => {
-            if (renamingId === notebook.id) {
-              return (
-                <li key={notebook.id}>
-                  <form onSubmit={submitRename} className="px-1">
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onBlur={submitRename}
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") setRenamingId(null);
-                      }}
-                      className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-sm outline-none focus:border-foreground/60"
-                    />
-                  </form>
-                </li>
-              );
-            }
-
-            if (confirmingDeleteId === notebook.id) {
-              return (
-                <li
-                  key={notebook.id}
-                  className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs"
-                >
-                  <span className="truncate text-foreground/60">Delete “{notebook.name}”?</span>
-                  <span className="flex shrink-0 gap-1">
-                    <button
-                      onClick={() => handleDeleteNotebook(notebook)}
-                      className="rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      onClick={() => setConfirmingDeleteId(null)}
-                      className="rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
-                    >
-                      Cancel
-                    </button>
-                  </span>
-                </li>
-              );
-            }
-
-            const expanded = expandedIds.has(notebook.id);
-            const notebookNotes = notes.filter((note) => note.notebookId === notebook.id);
-
-            return (
-              <li
-                key={notebook.id}
-                draggable
-                onDragStart={() => setDraggedId(notebook.id)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (dragOverId !== notebook.id) setDragOverId(notebook.id);
-                }}
-                onDragEnd={() => {
-                  setDraggedId(null);
-                  setDragOverId(null);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  handleDrop(notebook.id);
-                }}
-                className={`group relative rounded-md border-t-2 ${
-                  dragOverId === notebook.id && draggedId !== notebook.id
-                    ? "border-foreground/40"
-                    : "border-transparent"
-                } ${draggedId === notebook.id ? "opacity-40" : ""}`}
-              >
-                <div className="flex items-center">
-                  <button
-                    onClick={() => toggleExpanded(notebook.id)}
-                    aria-label={expanded ? "Collapse notebook" : "Expand notebook"}
-                    aria-expanded={expanded}
-                    className="flex w-5 shrink-0 items-center justify-center text-foreground/40 hover:text-foreground"
-                  >
-                    {expanded ? "▾" : "▸"}
-                  </button>
-                  <Link
-                    href={`/notebooks/${notebook.id}`}
-                    className={`block flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-foreground/10 ${
-                      params?.notebookId === notebook.id ? "bg-foreground/10 font-medium" : ""
-                    }`}
-                  >
-                    {notebook.name}
-                  </Link>
-                  <button
-                    onClick={() =>
-                      setOpenMenuId((prev) => (prev === notebook.id ? null : notebook.id))
-                    }
-                    aria-label={`Options for ${notebook.name}`}
-                    className={`shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
-                      openMenuId === notebook.id ? "" : "opacity-0 group-hover:opacity-100"
-                    }`}
-                  >
-                    ⋯
-                  </button>
-
-                  {openMenuId === notebook.id && (
-                    <>
-                      {/* Click-outside catcher */}
-                      <button
-                        aria-hidden
-                        tabIndex={-1}
-                        className="fixed inset-0 z-10 cursor-default"
-                        onClick={() => setOpenMenuId(null)}
-                      />
-                      <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
-                        <button
-                          onClick={() => startRename(notebook)}
-                          className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
-                        >
-                          Rename
-                        </button>
-                        {notebook.name !== "General" && (
-                          <button
-                            onClick={() => startDelete(notebook)}
-                            className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-                {expanded && (
-                  <ul className="ml-5 flex flex-col gap-0.5 border-l border-foreground/10 pl-2">
-                    {notebookNotes.map((note) => (
-                      <li key={note.id}>
-                        <Link
-                          href={`/notes/${note.id}`}
-                          className={`block truncate rounded-md px-2 py-1 text-xs hover:bg-foreground/10 ${
-                            params?.noteId === note.id
-                              ? "bg-foreground/10 font-medium text-foreground"
-                              : "text-foreground/60"
-                          }`}
-                        >
-                          {note.title || "Untitled"}
-                        </Link>
-                      </li>
-                    ))}
-                    {notebookNotes.length === 0 && (
-                      <li className="px-2 py-1 text-xs text-foreground/40">No notes</li>
-                    )}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-          {notebooks.length === 0 && (
-            <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
-          )}
-        </ul>
-      </nav>
-
-      <div className="mt-3 flex items-center justify-between border-t border-foreground/10 pt-3">
-        <span className="truncate text-sm text-foreground/60">{userName}</span>
-        <button
-          onClick={handleSignOut}
-          className="shrink-0 rounded-md px-2 py-1 text-xs hover:bg-foreground/10"
-        >
-          Sign out
-        </button>
+      {/* Mobile sliding drawer */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 transform flex-col border-r border-foreground/10 bg-background px-3 py-3 transition-transform duration-200 ease-out md:hidden ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {renderBody({ onNavigate: () => setMobileOpen(false), headerAction: "close" })}
       </div>
-    </div>
+
+      {/* Desktop sidebar */}
+      {collapsed ? (
+        <div className="hidden border-r border-foreground/10 px-2 py-3 md:flex md:flex-col md:items-center md:gap-3">
+          <button
+            onClick={toggleCollapsed}
+            aria-label="Expand sidebar"
+            className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+          >
+            »
+          </button>
+        </div>
+      ) : (
+        <div className="hidden w-64 shrink-0 border-r border-foreground/10 px-3 py-3 md:flex md:flex-col">
+          {renderBody({ onNavigate: () => {}, headerAction: "collapse" })}
+        </div>
+      )}
+    </>
   );
 }

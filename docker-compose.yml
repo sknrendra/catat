@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ghcr.io/sknrendra/catat:${APP_TAG:-0.1}
     restart: unless-stopped
     environment:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}

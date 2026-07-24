@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Catat",
   description: "Personal notetaking",
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({

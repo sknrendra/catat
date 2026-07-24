@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db";
 import * as schema from "./db/schema";
 import { notebooks } from "./db/schema";
+import { resend } from "./resend";
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -13,6 +14,19 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      await resend.emails.send({
+        from: process.env.EMAIL_FROM!,
+        to: user.email,
+        subject: "Verify your email for Catat",
+        html: `<p>Click the link below to verify your email and finish setting up your Catat account.</p><p><a href="${url}">Verify email</a></p><p>If you didn't request this, you can ignore this email.</p>`,
+      });
+    },
   },
   databaseHooks: {
     user: {

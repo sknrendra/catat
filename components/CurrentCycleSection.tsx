@@ -50,15 +50,15 @@ export function CurrentCycleSection({
         Current Cycle
       </h2>
       {!cycle ? (
-        <>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-foreground/10 px-6 py-10 text-center shadow-sm">
+          <p className="text-sm text-foreground/50">No current active cycle</p>
           <button
             onClick={() => setShowModal(true)}
-            className="mb-4 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
           >
             + New Cycle
           </button>
-          <p className="text-sm text-foreground/50">No current active cycle</p>
-        </>
+        </div>
       ) : (
         <>
           <Link

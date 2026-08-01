@@ -34,7 +34,7 @@ export function NoteList({ notebookId, notes }: { notebookId: string; notes: Not
       <button
         onClick={handleCreateNote}
         disabled={creating}
-        className="mb-4 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
+        className="mb-4 cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
       >
         + New note
       </button>

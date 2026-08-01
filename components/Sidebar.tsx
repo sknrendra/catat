@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { SidebarProjectsSection } from "@/components/SidebarProjectsSection";
+import logo from "@/app/icon.png";
 
 type Notebook = {
   id: string;
@@ -197,14 +199,19 @@ export function Sidebar({
     return (
       <>
         <div className="mb-4 flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold tracking-tight" onClick={onNavigate}>
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm font-semibold tracking-tight"
+            onClick={onNavigate}
+          >
+            <Image src={logo} alt="" width={20} height={20} className="rounded-md" />
             Catat
           </Link>
           {headerAction === "collapse" ? (
             <button
               onClick={toggleCollapsed}
               aria-label="Collapse sidebar"
-              className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+              className="cursor-pointer rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
             >
               «
             </button>
@@ -212,7 +219,7 @@ export function Sidebar({
             <button
               onClick={() => setMobileOpen(false)}
               aria-label="Close sidebar"
-              className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+              className="cursor-pointer rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
             >
               ✕
             </button>
@@ -236,7 +243,7 @@ export function Sidebar({
           <button
             onClick={() => setShowNewNotebookInput((prev) => !prev)}
             aria-label="New notebook"
-            className="rounded-md px-1.5 text-sm hover:bg-foreground/10"
+            className="cursor-pointer rounded-md px-1.5 text-sm hover:bg-foreground/10"
           >
             +
           </button>
@@ -292,13 +299,13 @@ export function Sidebar({
                     <span className="flex shrink-0 gap-1">
                       <button
                         onClick={() => handleDeleteNotebook(notebook)}
-                        className="rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
+                        className="cursor-pointer rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
                       >
                         Confirm
                       </button>
                       <button
                         onClick={() => setConfirmingDeleteId(null)}
-                        className="rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
+                        className="cursor-pointer rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
                       >
                         Cancel
                       </button>
@@ -338,7 +345,7 @@ export function Sidebar({
                       onClick={() => toggleExpanded(notebook.id)}
                       aria-label={expanded ? "Collapse notebook" : "Expand notebook"}
                       aria-expanded={expanded}
-                      className="flex w-5 shrink-0 items-center justify-center text-foreground/40 hover:text-foreground"
+                      className="flex w-5 shrink-0 cursor-pointer items-center justify-center text-foreground/40 hover:text-foreground"
                     >
                       {expanded ? "▾" : "▸"}
                     </button>
@@ -356,7 +363,7 @@ export function Sidebar({
                         setOpenMenuId((prev) => (prev === notebook.id ? null : notebook.id))
                       }
                       aria-label={`Options for ${notebook.name}`}
-                      className={`shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
+                      className={`shrink-0 cursor-pointer rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
                         openMenuId === notebook.id ? "" : "opacity-0 group-hover:opacity-100"
                       }`}
                     >
@@ -375,20 +382,20 @@ export function Sidebar({
                         <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
                           <button
                             onClick={() => startNewNote(notebook)}
-                            className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                            className="cursor-pointer px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
                           >
                             New note
                           </button>
                           <button
                             onClick={() => startRename(notebook)}
-                            className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                            className="cursor-pointer px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
                           >
                             Rename
                           </button>
                           {notebook.name !== "General" && (
                             <button
                               onClick={() => startDelete(notebook)}
-                              className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                              className="cursor-pointer px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
                             >
                               Delete
                             </button>
@@ -451,7 +458,7 @@ export function Sidebar({
           <span className="truncate text-sm text-foreground/60">{userName}</span>
           <button
             onClick={handleSignOut}
-            className="shrink-0 rounded-md px-2 py-1 text-xs hover:bg-foreground/10"
+            className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs hover:bg-foreground/10"
           >
             Sign out
           </button>
@@ -466,7 +473,7 @@ export function Sidebar({
       <button
         onClick={() => setMobileOpen(true)}
         aria-label="Open sidebar"
-        className="fixed left-3 top-3 z-30 rounded-md border border-foreground/20 bg-background px-2 py-1 text-sm shadow-sm md:hidden"
+        className="fixed left-3 top-3 z-30 cursor-pointer rounded-md border border-foreground/20 bg-background px-2 py-1 text-sm shadow-sm md:hidden"
       >
         ☰
       </button>
@@ -496,7 +503,7 @@ export function Sidebar({
           <button
             onClick={toggleCollapsed}
             aria-label="Expand sidebar"
-            className="rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
+            className="cursor-pointer rounded-md px-2 py-1 text-sm hover:bg-foreground/10"
           >
             »
           </button>

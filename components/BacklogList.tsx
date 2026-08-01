@@ -15,14 +15,25 @@ type Backlog = {
   updatedAt: string | Date;
 };
 
+const FILTERS = ["open", "done", "all"] as const;
+type Filter = (typeof FILTERS)[number];
+const FILTER_LABELS: Record<Filter, string> = { open: "Open", done: "Done", all: "All" };
+
 export function BacklogList({ projectId, backlogs }: { projectId: string; backlogs: Backlog[] }) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
+  const [filter, setFilter] = useState<Filter>("open");
 
   function handleCreated() {
     setShowModal(false);
     router.refresh();
   }
+
+  const visibleBacklogs = backlogs.filter((backlog) => {
+    if (filter === "done") return backlog.status === "done";
+    if (filter === "open") return backlog.status !== "done";
+    return true;
+  });
 
   return (
     <div>
@@ -32,10 +43,26 @@ export function BacklogList({ projectId, backlogs }: { projectId: string; backlo
         </h2>
         <button
           onClick={() => setShowModal(true)}
-          className="rounded-md px-2 py-1 text-xs font-medium text-foreground/60 hover:bg-foreground/10"
+          className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-foreground/60 hover:bg-foreground/10"
         >
           + New Work
         </button>
+      </div>
+
+      <div className="mb-3 flex items-center gap-1">
+        {FILTERS.map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${
+              filter === f
+                ? "bg-foreground text-background"
+                : "text-foreground/50 hover:bg-foreground/10"
+            }`}
+          >
+            {FILTER_LABELS[f]}
+          </button>
+        ))}
       </div>
 
       {showModal && (
@@ -51,14 +78,18 @@ export function BacklogList({ projectId, backlogs }: { projectId: string; backlo
           <p className="text-sm text-foreground/50">No work items in this project yet.</p>
           <button
             onClick={() => setShowModal(true)}
-            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+            className="cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
           >
             + New Work
           </button>
         </div>
+      ) : visibleBacklogs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-foreground/10 px-6 py-10 text-center shadow-sm">
+          <p className="text-sm text-foreground/50">No {FILTER_LABELS[filter].toLowerCase()} work items.</p>
+        </div>
       ) : (
         <ul className="flex flex-col divide-y divide-foreground/10 border-t border-foreground/10">
-          {backlogs.map((backlog) => (
+          {visibleBacklogs.map((backlog) => (
             <li key={backlog.id}>
               <Link
                 href={`/backlogs/${backlog.id}`}

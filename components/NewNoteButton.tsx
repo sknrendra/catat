@@ -22,7 +22,7 @@ export function NewNoteButton() {
       onClick={handleCreateNote}
       disabled={creating}
       aria-label="New note"
-      className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
+      className="cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
     >
       + New note
     </button>

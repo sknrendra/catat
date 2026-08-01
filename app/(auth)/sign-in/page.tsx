@@ -75,7 +75,7 @@ export default function SignInPage() {
               type="button"
               onClick={handleResendVerification}
               disabled={resendState === "sending"}
-              className="underline disabled:opacity-50"
+              className="cursor-pointer underline disabled:opacity-50"
             >
               {resendState === "sending" ? "Sending…" : "Resend verification email"}
             </button>
@@ -85,7 +85,7 @@ export default function SignInPage() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+        className="mt-2 cursor-pointer rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
       >
         {loading ? "Signing in…" : "Sign in"}
       </button>

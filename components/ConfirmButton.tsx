@@ -18,13 +18,13 @@ export function ConfirmButton({
       <span className="flex items-center gap-1 text-xs">
         <button
           onClick={onConfirm}
-          className="rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
+          className="cursor-pointer rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
         >
           {confirmLabel}
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
+          className="cursor-pointer rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
         >
           Cancel
         </button>
@@ -35,7 +35,7 @@ export function ConfirmButton({
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-foreground/10 hover:text-foreground"
+      className="cursor-pointer rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-foreground/10 hover:text-foreground"
     >
       {label}
     </button>

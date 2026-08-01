@@ -482,7 +482,7 @@ export function Sidebar({
 
       {/* Desktop sidebar */}
       {collapsed ? (
-        <div className="hidden border-r border-foreground/10 px-2 py-3 md:flex md:flex-col md:items-center md:gap-3">
+        <div className="hidden h-full border-r border-foreground/10 px-2 py-3 md:flex md:flex-col md:items-center md:gap-3">
           <button
             onClick={toggleCollapsed}
             aria-label="Expand sidebar"
@@ -492,7 +492,7 @@ export function Sidebar({
           </button>
         </div>
       ) : (
-        <div className="hidden w-64 shrink-0 border-r border-foreground/10 px-3 py-3 md:flex md:flex-col">
+        <div className="hidden h-full w-64 shrink-0 border-r border-foreground/10 px-3 py-3 md:flex md:flex-col">
           {renderBody({ onNavigate: () => {}, headerAction: "collapse" })}
         </div>
       )}

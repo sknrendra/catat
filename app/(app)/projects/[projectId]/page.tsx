@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { backlogs, cycleBacklogs, cycles, projects } from "@/lib/db/schema";
@@ -33,7 +33,13 @@ export default async function ProjectPage({
       updatedAt: backlogs.updatedAt,
     })
     .from(backlogs)
-    .where(and(eq(backlogs.projectId, projectId), eq(backlogs.userId, userId)))
+    .where(
+      and(
+        eq(backlogs.projectId, projectId),
+        eq(backlogs.userId, userId),
+        isNull(backlogs.parentId),
+      ),
+    )
     .orderBy(desc(backlogs.updatedAt));
 
   const [currentCycle] = await db

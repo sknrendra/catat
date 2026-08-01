@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
 // --- BetterAuth tables (generated via `npx @better-auth/cli generate`) ---
 
@@ -219,6 +219,9 @@ export const backlogs = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    parentId: text("parent_id").references((): AnySQLiteColumn => backlogs.id, {
+      onDelete: "cascade",
+    }),
     title: text("title").notNull().default(""),
     content: text("content", { mode: "json" }).notNull(),
     status: text("status", { enum: BACKLOG_STATUSES }).notNull().default("created"),
@@ -234,6 +237,7 @@ export const backlogs = sqliteTable(
   (table) => [
     index("backlogs_projectId_idx").on(table.projectId),
     index("backlogs_userId_idx").on(table.userId),
+    index("backlogs_parentId_idx").on(table.parentId),
   ],
 );
 
@@ -307,6 +311,12 @@ export const backlogsRelations = relations(backlogs, ({ one, many }) => ({
     fields: [backlogs.userId],
     references: [user.id],
   }),
+  parent: one(backlogs, {
+    fields: [backlogs.parentId],
+    references: [backlogs.id],
+    relationName: "backlogChildren",
+  }),
+  children: many(backlogs, { relationName: "backlogChildren" }),
   cycleItems: many(cycleBacklogs),
 }));
 

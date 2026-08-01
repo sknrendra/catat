@@ -11,10 +11,12 @@ import { LABEL_META, type BacklogLabel } from "@/lib/backlog";
 
 export function NewBacklogModal({
   projectId,
+  parentId,
   onClose,
   onCreated,
 }: {
   projectId: string;
+  parentId?: string;
   onClose: () => void;
   onCreated: () => void;
 }) {
@@ -51,6 +53,7 @@ export function NewBacklogModal({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         projectId,
+        parentId,
         title: title.trim(),
         label,
         content: editor.getJSON(),
@@ -73,7 +76,7 @@ export function NewBacklogModal({
         className="relative flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-md border border-foreground/20 bg-background p-5 shadow-lg"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">New Work</h2>
+          <h2 className="text-sm font-semibold">{parentId ? "New Child Work Item" : "New Work"}</h2>
           <button
             type="button"
             onClick={onClose}

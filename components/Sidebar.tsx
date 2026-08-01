@@ -290,13 +290,13 @@ export function Sidebar({
                     e.preventDefault();
                     handleDrop(notebook.id);
                   }}
-                  className={`group relative rounded-md border-t-2 ${
+                  className={`group rounded-md border-t-2 ${
                     dragOverId === notebook.id && draggedId !== notebook.id
                       ? "border-foreground/40"
                       : "border-transparent"
                   } ${draggedId === notebook.id ? "opacity-40" : ""}`}
                 >
-                  <div className="flex items-center">
+                  <div className="relative flex items-center">
                     <button
                       onClick={() => toggleExpanded(notebook.id)}
                       aria-label={expanded ? "Collapse notebook" : "Expand notebook"}

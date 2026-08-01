@@ -77,16 +77,26 @@ export function ProjectDescription({
     );
   }
 
+  if (!description) {
+    return (
+      <div className="mb-6 flex flex-col items-center justify-center gap-3 rounded-lg border border-foreground/10 px-6 py-10 text-center shadow-sm">
+        <p className="text-sm text-foreground/50">No description</p>
+        <button
+          onClick={startEditing}
+          className="cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+        >
+          Add description
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={startEditing}
       className="mb-6 block w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm hover:bg-foreground/5"
     >
-      {description ? (
-        <p className="whitespace-pre-wrap text-foreground/80">{description}</p>
-      ) : (
-        <p className="text-foreground/30">What is this project about?</p>
-      )}
+      <p className="whitespace-pre-wrap text-foreground/80">{description}</p>
     </button>
   );
 }

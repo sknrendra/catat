@@ -189,41 +189,55 @@ export function BacklogEditor({
 
         {editingDescription && <Toolbar editor={editor} />}
 
-        <div className="relative">
-          <div
-            ref={descriptionRef}
-            role="button"
-            tabIndex={editingDescription ? -1 : 0}
-            onClick={() => {
-              if (!editingDescription) setEditingDescription(true);
-            }}
-            onKeyDown={(e) => {
-              if (!editingDescription && (e.key === "Enter" || e.key === " ")) {
-                e.preventDefault();
-                setEditingDescription(true);
-              }
-            }}
-            className={`rounded-md ${editingDescription ? "" : "cursor-pointer"} ${
-              !editingDescription && !expanded ? "max-h-48 overflow-hidden" : ""
-            }`}
-          >
-            <EditorContent editor={editor} />
+        {!editingDescription && editor.isEmpty ? (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-foreground/10 px-6 py-10 text-center shadow-sm">
+            <p className="text-sm text-foreground/50">No description</p>
+            <button
+              onClick={() => setEditingDescription(true)}
+              className="cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+            >
+              Add description
+            </button>
           </div>
-          {!editingDescription && !expanded && truncated && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
-          )}
-        </div>
+        ) : (
+          <>
+            <div className="relative">
+              <div
+                ref={descriptionRef}
+                role="button"
+                tabIndex={editingDescription ? -1 : 0}
+                onClick={() => {
+                  if (!editingDescription) setEditingDescription(true);
+                }}
+                onKeyDown={(e) => {
+                  if (!editingDescription && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    setEditingDescription(true);
+                  }
+                }}
+                className={`rounded-md ${editingDescription ? "" : "cursor-pointer"} ${
+                  !editingDescription && !expanded ? "max-h-48 overflow-hidden" : ""
+                }`}
+              >
+                <EditorContent editor={editor} />
+              </div>
+              {!editingDescription && !expanded && truncated && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
+              )}
+            </div>
 
-        {!editingDescription && truncated && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded((prev) => !prev);
-            }}
-            className="cursor-pointer self-start text-xs font-medium text-foreground/50 hover:text-foreground"
-          >
-            {expanded ? "Show less" : "Show more"}
-          </button>
+            {!editingDescription && truncated && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded((prev) => !prev);
+                }}
+                className="cursor-pointer self-start text-xs font-medium text-foreground/50 hover:text-foreground"
+              >
+                {expanded ? "Show less" : "Show more"}
+              </button>
+            )}
+          </>
         )}
       </div>
 

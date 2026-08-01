@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { notebooks, notes } from "@/lib/db/schema";
+import { notebooks, notes, projects } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
 import { NewNoteButton } from "@/components/NewNoteButton";
 
@@ -29,6 +29,13 @@ export default async function AppHomePage() {
     .orderBy(desc(notebooks.updatedAt))
     .limit(5);
 
+  const recentProjects = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.userId, userId))
+    .orderBy(desc(projects.updatedAt))
+    .limit(5);
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -36,7 +43,7 @@ export default async function AppHomePage() {
         <NewNoteButton />
       </div>
 
-      {recentNotes.length === 0 && recentNotebooks.length === 0 ? (
+      {recentNotes.length === 0 && recentNotebooks.length === 0 && recentProjects.length === 0 ? (
         <p className="text-sm text-foreground/50">
           Select a notebook, or create one to get started.
         </p>
@@ -68,7 +75,7 @@ export default async function AppHomePage() {
             )}
           </section>
 
-          <section>
+          <section className="mb-8">
             <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground/50">
               Notebooks
             </h2>
@@ -83,6 +90,28 @@ export default async function AppHomePage() {
                       className="block px-1 py-3 text-sm hover:bg-foreground/5"
                     >
                       {notebook.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground/50">
+              Projects
+            </h2>
+            {recentProjects.length === 0 ? (
+              <p className="text-sm text-foreground/50">No projects yet.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-foreground/10 border-t border-foreground/10">
+                {recentProjects.map((project) => (
+                  <li key={project.id}>
+                    <Link
+                      href={`/projects/${project.id}`}
+                      className="block px-1 py-3 text-sm hover:bg-foreground/5"
+                    >
+                      {project.title}
                     </Link>
                   </li>
                 ))}

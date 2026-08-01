@@ -1,6 +1,6 @@
 import { eq, asc, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { notebooks, notes } from "@/lib/db/schema";
+import { notebooks, notes, projects } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -25,9 +25,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .where(eq(notes.userId, userId))
     .orderBy(desc(notes.updatedAt));
 
+  const projectRows = await db
+    .select({ id: projects.id, title: projects.title })
+    .from(projects)
+    .where(eq(projects.userId, userId))
+    .orderBy(desc(projects.createdAt));
+
   return (
     <div className="flex flex-1 min-h-0">
-      <Sidebar notebooks={notebookRows} notes={noteRows} userName={session.user.name} />
+      <Sidebar
+        notebooks={notebookRows}
+        notes={noteRows}
+        projects={projectRows}
+        userName={session.user.name}
+      />
       <main className="flex-1 min-w-0 overflow-y-auto pt-14 md:pt-0">{children}</main>
     </div>
   );

@@ -35,11 +35,27 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const projectId = typeof body.projectId === "string" ? body.projectId : "";
+  let projectId = typeof body.projectId === "string" ? body.projectId : "";
   const title = typeof body.title === "string" ? body.title : "";
   const label = BACKLOG_LABELS.includes(body.label) ? body.label : "task";
+  const parentId = typeof body.parentId === "string" ? body.parentId : null;
 
   if (!projectId) return NextResponse.json({ error: "projectId is required" }, { status: 400 });
+
+  if (parentId) {
+    const [parent] = await db
+      .select({ id: backlogs.id, projectId: backlogs.projectId, parentId: backlogs.parentId })
+      .from(backlogs)
+      .where(and(eq(backlogs.id, parentId), eq(backlogs.userId, userId)));
+    if (!parent) return NextResponse.json({ error: "Parent work item not found" }, { status: 404 });
+    if (parent.parentId) {
+      return NextResponse.json(
+        { error: "Cannot nest a work item more than one level deep" },
+        { status: 400 },
+      );
+    }
+    projectId = parent.projectId;
+  }
 
   const [project] = await db
     .select({ id: projects.id })
@@ -55,6 +71,7 @@ export async function POST(request: NextRequest) {
       id: crypto.randomUUID(),
       projectId,
       userId,
+      parentId,
       title,
       label,
       content,

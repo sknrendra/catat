@@ -28,6 +28,19 @@ export default async function BacklogPage({
     .where(eq(projects.userId, userId))
     .orderBy(desc(projects.createdAt));
 
+  const childItems = backlog.parentId
+    ? []
+    : await db
+        .select({
+          id: backlogs.id,
+          title: backlogs.title,
+          status: backlogs.status,
+          label: backlogs.label,
+        })
+        .from(backlogs)
+        .where(and(eq(backlogs.parentId, backlog.id), eq(backlogs.userId, userId)))
+        .orderBy(desc(backlogs.updatedAt));
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <BacklogEditor
@@ -39,6 +52,8 @@ export default async function BacklogPage({
         initialContent={backlog.content as JSONContent}
         initialStatus={backlog.status}
         initialLabel={backlog.label}
+        isChild={!!backlog.parentId}
+        childItems={childItems}
       />
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useDebouncedCallback } from "@/lib/hooks/useDebouncedCallback";
 
 export function ProjectDescription({
   projectId,
@@ -11,35 +10,83 @@ export function ProjectDescription({
   initialDescription: string;
 }) {
   const [description, setDescription] = useState(initialDescription);
-  const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
+  const [draft, setDraft] = useState(initialDescription);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const saveDescription = useDebouncedCallback(async (value: string) => {
-    setSaveState("saving");
+  function startEditing() {
+    setDraft(description);
+    setEditing(true);
+  }
+
+  function handleCancel() {
+    setDraft(description);
+    setEditing(false);
+  }
+
+  async function handleSave() {
+    const value = draft.trim();
+    setSaving(true);
     await fetch(`/api/projects/${projectId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ description: value }),
     });
-    setSaveState("saved");
-  }, 600);
-
-  function handleChange(value: string) {
+    setSaving(false);
     setDescription(value);
-    saveDescription(value);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="mb-6">
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSave();
+            } else if (e.key === "Escape") {
+              handleCancel();
+            }
+          }}
+          placeholder="What is this project about?"
+          rows={3}
+          disabled={saving}
+          className="w-full resize-none rounded-md border border-foreground/20 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-foreground/30 focus:border-foreground/60 disabled:opacity-50"
+        />
+        <div className="mt-1 flex justify-end gap-2">
+          <button
+            onClick={handleCancel}
+            disabled={saving}
+            className="rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-foreground/10 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-md px-2 py-1 text-xs font-medium hover:bg-foreground/10 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="mb-6">
-      <textarea
-        value={description}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="What is this project about?"
-        rows={3}
-        className="w-full resize-none rounded-md border border-foreground/20 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-foreground/30 focus:border-foreground/60"
-      />
-      <span className="mt-1 block text-right text-xs text-foreground/40">
-        {saveState === "saving" ? "Saving…" : "Saved"}
-      </span>
-    </div>
+    <button
+      onClick={startEditing}
+      className="mb-6 block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-foreground/5"
+    >
+      {description ? (
+        <p className="whitespace-pre-wrap text-foreground/80">{description}</p>
+      ) : (
+        <p className="text-foreground/30">What is this project about?</p>
+      )}
+    </button>
   );
 }

@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
     .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
   if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
+  const content = body.content !== undefined ? body.content : { type: "doc", content: [{ type: "paragraph" }] };
+
   const [backlog] = await db
     .insert(backlogs)
     .values({
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
       userId,
       title,
       label,
-      content: { type: "doc", content: [{ type: "paragraph" }] },
+      content,
     })
     .returning();
 

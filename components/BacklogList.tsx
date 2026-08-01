@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LABEL_META, STATUS_META, type BacklogLabel, type BacklogStatus } from "@/lib/backlog";
+import { NewBacklogModal } from "@/components/NewBacklogModal";
 
 type Backlog = {
   id: string;
@@ -16,31 +17,29 @@ type Backlog = {
 
 export function BacklogList({ projectId, backlogs }: { projectId: string; backlogs: Backlog[] }) {
   const router = useRouter();
-  const [creating, setCreating] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  async function handleCreateBacklog() {
-    setCreating(true);
-    const res = await fetch("/api/backlogs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId }),
-    });
-    setCreating(false);
-    if (res.ok) {
-      const backlog = await res.json();
-      router.push(`/backlogs/${backlog.id}`);
-    }
+  function handleCreated() {
+    setShowModal(false);
+    router.refresh();
   }
 
   return (
     <div>
       <button
-        onClick={handleCreateBacklog}
-        disabled={creating}
-        className="mb-4 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
+        onClick={() => setShowModal(true)}
+        className="mb-4 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
       >
         + New Work
       </button>
+
+      {showModal && (
+        <NewBacklogModal
+          projectId={projectId}
+          onClose={() => setShowModal(false)}
+          onCreated={handleCreated}
+        />
+      )}
 
       {backlogs.length === 0 ? (
         <p className="text-sm text-foreground/50">No work items in this project yet.</p>

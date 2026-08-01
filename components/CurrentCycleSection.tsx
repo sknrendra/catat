@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CYCLE_STATUS_META, type CycleStatus } from "@/lib/cycle";
 import type { BacklogLabel, BacklogStatus } from "@/lib/backlog";
 import { NewCycleModal } from "@/components/NewCycleModal";
+import { CycleItemList } from "@/components/CycleItemList";
 
 type Cycle = {
   id: string;
@@ -22,13 +23,17 @@ type Backlog = {
   label: BacklogLabel;
 };
 
+type CycleItem = Backlog & { updatedAt: string | Date };
+
 export function CurrentCycleSection({
   projectId,
   cycle,
+  items,
   backlogs,
 }: {
   projectId: string;
   cycle: Cycle | null;
+  items: CycleItem[];
   backlogs: Backlog[];
 }) {
   const router = useRouter();
@@ -42,7 +47,7 @@ export function CurrentCycleSection({
   return (
     <div className="mb-8">
       <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground/50">
-        Cycle
+        Current Cycle
       </h2>
       {!cycle ? (
         <button
@@ -52,31 +57,30 @@ export function CurrentCycleSection({
           + New Cycle
         </button>
       ) : (
-        <ul className="flex flex-col divide-y divide-foreground/10 border-t border-foreground/10">
-          <li>
-            <Link
-              href={`/cycles/${cycle.id}`}
-              className="flex items-center justify-between gap-4 px-1 py-3 hover:bg-foreground/5"
-            >
-              <span className="min-w-0 truncate text-sm">
-                {cycle.description || "No description"}
+        <>
+          <Link
+            href={`/cycles/${cycle.id}`}
+            className="flex items-center justify-between gap-4 rounded-md px-1 py-2 hover:bg-foreground/5"
+          >
+            <span className="min-w-0 truncate text-sm">
+              {cycle.description || "No description"}
+            </span>
+            <span className="flex shrink-0 items-center gap-3 text-xs text-foreground/40">
+              {cycle.plannedStartDate && (
+                <span>{new Date(cycle.plannedStartDate).toLocaleDateString()}</span>
+              )}
+              {cycle.plannedEndDate && (
+                <span>→ {new Date(cycle.plannedEndDate).toLocaleDateString()}</span>
+              )}
+              <span
+                className={`rounded-md px-1.5 py-0.5 font-medium ${CYCLE_STATUS_META[cycle.status].className}`}
+              >
+                {CYCLE_STATUS_META[cycle.status].label}
               </span>
-              <span className="flex shrink-0 items-center gap-3 text-xs text-foreground/40">
-                {cycle.plannedStartDate && (
-                  <span>{new Date(cycle.plannedStartDate).toLocaleDateString()}</span>
-                )}
-                {cycle.plannedEndDate && (
-                  <span>→ {new Date(cycle.plannedEndDate).toLocaleDateString()}</span>
-                )}
-                <span
-                  className={`rounded-md px-1.5 py-0.5 font-medium ${CYCLE_STATUS_META[cycle.status].className}`}
-                >
-                  {CYCLE_STATUS_META[cycle.status].label}
-                </span>
-              </span>
-            </Link>
-          </li>
-        </ul>
+            </span>
+          </Link>
+          <CycleItemList items={items} />
+        </>
       )}
 
       {showModal && (

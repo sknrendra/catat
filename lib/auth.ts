@@ -20,6 +20,11 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[dev] Skipping verification email; verify ${user.email} at: ${url}`);
+        return;
+      }
+
       const { error } = await resend.emails.send({
         from: process.env.EMAIL_FROM!,
         to: user.email,

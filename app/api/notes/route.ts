@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   let notebookId = typeof body.notebookId === "string" ? body.notebookId : "";
+  const title = typeof body.title === "string" ? body.title : "";
 
   if (notebookId) {
     const [notebook] = await db
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       id: crypto.randomUUID(),
       notebookId,
       userId,
-      title: "",
+      title,
       content: { type: "doc", content: [{ type: "paragraph" }] },
     })
     .returning();

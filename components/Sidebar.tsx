@@ -40,6 +40,9 @@ export function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [newNoteForId, setNewNoteForId] = useState<string | null>(null);
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [creatingNote, setCreatingNote] = useState(false);
 
   function toggleExpanded(notebookId: string) {
     setExpandedIds((prev) => {
@@ -134,6 +137,32 @@ export function Sidebar({
     await fetch(`/api/notebooks/${notebook.id}`, { method: "DELETE" });
     if (params?.notebookId === notebook.id) router.push("/");
     router.refresh();
+  }
+
+  function startNewNote(notebook: Notebook) {
+    setOpenMenuId(null);
+    setNewNoteTitle("");
+    setNewNoteForId(notebook.id);
+    setExpandedIds((prev) => new Set(prev).add(notebook.id));
+  }
+
+  async function submitNewNote(e: React.FormEvent, notebookId: string) {
+    e.preventDefault();
+    const title = newNoteTitle.trim();
+    if (!title) return;
+    setCreatingNote(true);
+    const res = await fetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notebookId, title }),
+    });
+    setCreatingNote(false);
+    if (res.ok) {
+      const note = await res.json();
+      setNewNoteForId(null);
+      router.push(`/notes/${note.id}`);
+      router.refresh();
+    }
   }
 
   async function handleSignOut() {
@@ -290,13 +319,13 @@ export function Sidebar({
                     e.preventDefault();
                     handleDrop(notebook.id);
                   }}
-                  className={`group relative rounded-md border-t-2 ${
+                  className={`group rounded-md border-t-2 ${
                     dragOverId === notebook.id && draggedId !== notebook.id
                       ? "border-foreground/40"
                       : "border-transparent"
                   } ${draggedId === notebook.id ? "opacity-40" : ""}`}
                 >
-                  <div className="flex items-center">
+                  <div className="relative flex items-center">
                     <button
                       onClick={() => toggleExpanded(notebook.id)}
                       aria-label={expanded ? "Collapse notebook" : "Expand notebook"}
@@ -337,6 +366,12 @@ export function Sidebar({
                         />
                         <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
                           <button
+                            onClick={() => startNewNote(notebook)}
+                            className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                          >
+                            New note
+                          </button>
+                          <button
                             onClick={() => startRename(notebook)}
                             className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
                           >
@@ -356,6 +391,23 @@ export function Sidebar({
                   </div>
                   {expanded && (
                     <ul className="ml-5 flex flex-col gap-0.5 border-l border-foreground/10 pl-2">
+                      {newNoteForId === notebook.id && (
+                        <li>
+                          <form onSubmit={(e) => submitNewNote(e, notebook.id)}>
+                            <input
+                              autoFocus
+                              value={newNoteTitle}
+                              onChange={(e) => setNewNoteTitle(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Escape") setNewNoteForId(null);
+                              }}
+                              placeholder="Note title"
+                              disabled={creatingNote}
+                              className="w-full rounded-md border border-foreground/20 bg-transparent px-2 py-1 text-xs outline-none focus:border-foreground/60 disabled:opacity-50"
+                            />
+                          </form>
+                        </li>
+                      )}
                       {notebookNotes.map((note) => (
                         <li key={note.id}>
                           <Link
@@ -371,7 +423,7 @@ export function Sidebar({
                           </Link>
                         </li>
                       ))}
-                      {notebookNotes.length === 0 && (
+                      {notebookNotes.length === 0 && newNoteForId !== notebook.id && (
                         <li className="px-2 py-1 text-xs text-foreground/40">No notes</li>
                       )}
                     </ul>

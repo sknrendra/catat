@@ -26,12 +26,17 @@ export function BacklogList({ projectId, backlogs }: { projectId: string; backlo
 
   return (
     <div>
-      <button
-        onClick={() => setShowModal(true)}
-        className="mb-4 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
-      >
-        + New Work
-      </button>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-foreground/50">
+          Backlog
+        </h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="rounded-md px-2 py-1 text-xs font-medium text-foreground/60 hover:bg-foreground/10"
+        >
+          + New Work
+        </button>
+      </div>
 
       {showModal && (
         <NewBacklogModal
@@ -42,7 +47,15 @@ export function BacklogList({ projectId, backlogs }: { projectId: string; backlo
       )}
 
       {backlogs.length === 0 ? (
-        <p className="text-sm text-foreground/50">No work items in this project yet.</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-foreground/10 px-6 py-10 text-center shadow-sm">
+          <p className="text-sm text-foreground/50">No work items in this project yet.</p>
+          <button
+            onClick={() => setShowModal(true)}
+            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+          >
+            + New Work
+          </button>
+        </div>
       ) : (
         <ul className="flex flex-col divide-y divide-foreground/10 border-t border-foreground/10">
           {backlogs.map((backlog) => (

@@ -7,8 +7,34 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import type { JSONContent } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
 const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+
+function serializeListForClipboard(list: ProseMirrorNode, depth = 0): string {
+  const indent = "  ".repeat(depth);
+  let index = typeof list.attrs.start === "number" ? list.attrs.start : 1;
+  let out = "";
+
+  list.forEach((listItem) => {
+    const marker = list.type.name === "orderedList" ? `${index}.` : "-";
+    let itemText = "";
+    let nested = "";
+
+    listItem.forEach((child) => {
+      if (child.type.name === "bulletList" || child.type.name === "orderedList") {
+        nested += serializeListForClipboard(child, depth + 1);
+      } else {
+        itemText += child.textContent;
+      }
+    });
+
+    out += `${indent}${marker} ${itemText}\n${nested}`;
+    index++;
+  });
+
+  return out;
+}
 
 function useDebouncedCallback<T extends (...args: never[]) => void>(fn: T, delay: number) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,6 +91,17 @@ export function Editor({
       attributes: {
         class:
           "prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[50vh] prose-li:my-0.5 [&_li_p]:my-0",
+      },
+      clipboardTextSerializer: (slice) => {
+        let text = "";
+        slice.content.forEach((node) => {
+          if (node.type.name === "bulletList" || node.type.name === "orderedList") {
+            text += serializeListForClipboard(node);
+          } else {
+            text += `${node.textContent}\n`;
+          }
+        });
+        return text.trim();
       },
     },
   });

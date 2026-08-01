@@ -106,14 +106,14 @@ export function Editor({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between md:gap-4">
         <input
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Untitled"
           className="w-full bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-foreground/30"
         />
-        <div className="flex shrink-0 items-center gap-3 pt-2">
+        <div className="flex shrink-0 items-center gap-3 md:pt-2">
           <select
             value={currentNotebookId}
             onChange={(e) => handleNotebookChange(e.target.value)}

@@ -5,7 +5,11 @@ import * as schema from "./db/schema";
 import { notebooks } from "./db/schema";
 import { resend } from "./resend";
 
-const isDev = process.env.NODE_ENV !== "production";
+// The Docker runner image always sets NODE_ENV=production (required for
+// Next.js's production server), so this can't key off NODE_ENV alone -
+// SKIP_EMAIL_VERIFICATION lets the dev docker-compose setup opt in too.
+const skipEmailVerification =
+  process.env.NODE_ENV !== "production" || process.env.SKIP_EMAIL_VERIFICATION === "true";
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -18,13 +22,13 @@ export const auth = betterAuth({
     enabled: true,
     // Skipped in dev so sign-up signs the user straight in instead of
     // requiring a click-through on an email we don't actually send there.
-    requireEmailVerification: !isDev,
+    requireEmailVerification: !skipEmailVerification,
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      if (isDev) {
+      if (skipEmailVerification) {
         console.log(`[dev] Skipping verification email; verify ${user.email} at: ${url}`);
         return;
       }

@@ -1,6 +1,7 @@
 services:
   app:
-    image: ghcr.io/sknrendra/catat:${APP_TAG:-0.1}
+    build: .
+    pull_policy: build
     restart: unless-stopped
     environment:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
@@ -15,6 +16,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-catat-attachments}
       RESEND_API_KEY: ${RESEND_API_KEY}
       EMAIL_FROM: ${EMAIL_FROM}
+      SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-true}
     volumes:
       - sqlite-data:/app/data
     depends_on:

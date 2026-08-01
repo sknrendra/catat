@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { SidebarProjectsSection } from "@/components/SidebarProjectsSection";
 
 type Notebook = {
   id: string;
@@ -16,13 +17,20 @@ type Note = {
   title: string;
 };
 
+type Project = {
+  id: string;
+  title: string;
+};
+
 export function Sidebar({
   notebooks,
   notes,
+  projects,
   userName,
 }: {
   notebooks: Notebook[];
   notes: Note[];
+  projects: Project[];
   userName: string;
 }) {
   const router = useRouter();
@@ -435,6 +443,8 @@ export function Sidebar({
               <li className="px-2 py-1.5 text-sm text-foreground/50">No notebooks yet</li>
             )}
           </ul>
+
+          <SidebarProjectsSection projects={projects} onNavigate={onNavigate} />
         </nav>
 
         <div className="mt-3 flex items-center justify-between border-t border-foreground/10 pt-3">

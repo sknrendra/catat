@@ -94,6 +94,8 @@ export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
   notebooks: many(notebooks),
   notes: many(notes),
+  projects: many(projects),
+  backlogs: many(backlogs),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -175,6 +177,83 @@ export const attachments = sqliteTable(
   },
   (table) => [index("attachments_noteId_idx").on(table.noteId)],
 );
+
+export const BACKLOG_STATUSES = [
+  "created",
+  "in_progress",
+  "implemented",
+  "on_testing",
+  "done",
+] as const;
+
+export const BACKLOG_LABELS = ["task", "issue"] as const;
+
+export const projects = sqliteTable(
+  "projects",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("projects_userId_idx").on(table.userId)],
+);
+
+export const backlogs = sqliteTable(
+  "backlogs",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default(""),
+    content: text("content", { mode: "json" }).notNull(),
+    status: text("status", { enum: BACKLOG_STATUSES }).notNull().default("created"),
+    label: text("label", { enum: BACKLOG_LABELS }).notNull().default("task"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("backlogs_projectId_idx").on(table.projectId),
+    index("backlogs_userId_idx").on(table.userId),
+  ],
+);
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  user: one(user, {
+    fields: [projects.userId],
+    references: [user.id],
+  }),
+  backlogs: many(backlogs),
+}));
+
+export const backlogsRelations = relations(backlogs, ({ one }) => ({
+  project: one(projects, {
+    fields: [backlogs.projectId],
+    references: [projects.id],
+  }),
+  user: one(user, {
+    fields: [backlogs.userId],
+    references: [user.id],
+  }),
+}));
 
 export const notebooksRelations = relations(notebooks, ({ one, many }) => ({
   user: one(user, {

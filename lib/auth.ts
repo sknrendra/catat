@@ -5,6 +5,8 @@ import * as schema from "./db/schema";
 import { notebooks } from "./db/schema";
 import { resend } from "./resend";
 
+const isDev = process.env.NODE_ENV !== "production";
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
@@ -14,13 +16,15 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    // Skipped in dev so sign-up signs the user straight in instead of
+    // requiring a click-through on an email we don't actually send there.
+    requireEmailVerification: !isDev,
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      if (process.env.NODE_ENV !== "production") {
+      if (isDev) {
         console.log(`[dev] Skipping verification email; verify ${user.email} at: ${url}`);
         return;
       }

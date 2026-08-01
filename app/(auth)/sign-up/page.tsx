@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 export default function SignUpPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,10 +18,18 @@ export default function SignUpPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } = await authClient.signUp.email({ name, email, password });
+    const { data, error } = await authClient.signUp.email({ name, email, password });
     setLoading(false);
     if (error) {
       setError(error.message ?? "Could not sign up");
+      return;
+    }
+    // In dev, email verification is skipped and sign-up signs the user
+    // straight in (data.token is set); in production it still requires
+    // clicking the emailed verification link first.
+    if (data?.token) {
+      router.push("/");
+      router.refresh();
       return;
     }
     setSubmitted(true);

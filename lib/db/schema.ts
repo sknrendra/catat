@@ -96,6 +96,7 @@ export const userRelations = relations(user, ({ many }) => ({
   notes: many(notes),
   projects: many(projects),
   backlogs: many(backlogs),
+  cycles: many(cycles),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -236,15 +237,68 @@ export const backlogs = sqliteTable(
   ],
 );
 
+export const CYCLE_STATUSES = ["planned", "active", "completed"] as const;
+
+export const cycles = sqliteTable(
+  "cycles",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    description: text("description").notNull().default(""),
+    status: text("status", { enum: CYCLE_STATUSES }).notNull().default("planned"),
+    plannedStartDate: integer("planned_start_date", { mode: "timestamp_ms" }),
+    plannedEndDate: integer("planned_end_date", { mode: "timestamp_ms" }),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    endedAt: integer("ended_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("cycles_projectId_idx").on(table.projectId),
+    index("cycles_userId_idx").on(table.userId),
+  ],
+);
+
+export const cycleBacklogs = sqliteTable(
+  "cycle_backlogs",
+  {
+    id: text("id").primaryKey(),
+    cycleId: text("cycle_id")
+      .notNull()
+      .references(() => cycles.id, { onDelete: "cascade" }),
+    backlogId: text("backlog_id")
+      .notNull()
+      .references(() => backlogs.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+  },
+  (table) => [
+    index("cycle_backlogs_cycleId_idx").on(table.cycleId),
+    index("cycle_backlogs_backlogId_idx").on(table.backlogId),
+  ],
+);
+
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   user: one(user, {
     fields: [projects.userId],
     references: [user.id],
   }),
   backlogs: many(backlogs),
+  cycles: many(cycles),
 }));
 
-export const backlogsRelations = relations(backlogs, ({ one }) => ({
+export const backlogsRelations = relations(backlogs, ({ one, many }) => ({
   project: one(projects, {
     fields: [backlogs.projectId],
     references: [projects.id],
@@ -252,6 +306,30 @@ export const backlogsRelations = relations(backlogs, ({ one }) => ({
   user: one(user, {
     fields: [backlogs.userId],
     references: [user.id],
+  }),
+  cycleItems: many(cycleBacklogs),
+}));
+
+export const cyclesRelations = relations(cycles, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [cycles.projectId],
+    references: [projects.id],
+  }),
+  user: one(user, {
+    fields: [cycles.userId],
+    references: [user.id],
+  }),
+  items: many(cycleBacklogs),
+}));
+
+export const cycleBacklogsRelations = relations(cycleBacklogs, ({ one }) => ({
+  cycle: one(cycles, {
+    fields: [cycleBacklogs.cycleId],
+    references: [cycles.id],
+  }),
+  backlog: one(backlogs, {
+    fields: [cycleBacklogs.backlogId],
+    references: [backlogs.id],
   }),
 }));
 

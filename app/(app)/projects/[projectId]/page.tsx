@@ -1,9 +1,10 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { backlogs, projects } from "@/lib/db/schema";
+import { backlogs, cycleBacklogs, cycles, projects } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
 import { BacklogList } from "@/components/BacklogList";
+import { CurrentCycleSection } from "@/components/CurrentCycleSection";
 import { ProjectDescription } from "@/components/ProjectDescription";
 
 export default async function ProjectPage({
@@ -35,11 +36,44 @@ export default async function ProjectPage({
     .where(and(eq(backlogs.projectId, projectId), eq(backlogs.userId, userId)))
     .orderBy(desc(backlogs.updatedAt));
 
+  const [currentCycle] = await db
+    .select()
+    .from(cycles)
+    .where(
+      and(
+        eq(cycles.projectId, projectId),
+        eq(cycles.userId, userId),
+        inArray(cycles.status, ["planned", "active"]),
+      ),
+    )
+    .orderBy(desc(cycles.updatedAt))
+    .limit(1);
+
+  const cycleItemIds = currentCycle
+    ? new Set(
+        (
+          await db
+            .select({ backlogId: cycleBacklogs.backlogId })
+            .from(cycleBacklogs)
+            .where(eq(cycleBacklogs.cycleId, currentCycle.id))
+        ).map((r) => r.backlogId),
+      )
+    : new Set<string>();
+
+  const cycleItems = backlogRows.filter((b) => cycleItemIds.has(b.id));
+  const remainingBacklogs = backlogRows.filter((b) => !cycleItemIds.has(b.id));
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <h1 className="mb-4 text-xl font-semibold tracking-tight">{project.title}</h1>
       <ProjectDescription projectId={project.id} initialDescription={project.description} />
-      <BacklogList projectId={project.id} backlogs={backlogRows} />
+      <CurrentCycleSection
+        projectId={project.id}
+        cycle={currentCycle ?? null}
+        items={cycleItems}
+        backlogs={backlogRows}
+      />
+      <BacklogList projectId={project.id} backlogs={remainingBacklogs} />
     </div>
   );
 }

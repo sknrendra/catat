@@ -10,8 +10,9 @@ import { useDebouncedCallback } from "@/lib/hooks/useDebouncedCallback";
 import { Toolbar } from "@/components/editor/EditorToolbar";
 import { clipboardTextSerializer } from "@/components/editor/clipboard";
 import { ConfirmButton } from "@/components/ConfirmButton";
-import { BACKLOG_LABELS, BACKLOG_STATUSES } from "@/lib/db/schema";
-import { LABEL_META, STATUS_META, type BacklogLabel, type BacklogStatus } from "@/lib/backlog";
+import { BacklogStatusSelect } from "@/components/BacklogStatusSelect";
+import { BACKLOG_LABELS } from "@/lib/db/schema";
+import { LABEL_META, type BacklogLabel, type BacklogStatus } from "@/lib/backlog";
 
 export function BacklogEditor({
   backlogId,
@@ -33,7 +34,6 @@ export function BacklogEditor({
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [currentProjectId, setCurrentProjectId] = useState(projectId);
-  const [status, setStatus] = useState<BacklogStatus>(initialStatus);
   const [label, setLabel] = useState<BacklogLabel>(initialLabel);
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
 
@@ -66,16 +66,6 @@ export function BacklogEditor({
   function handleTitleChange(value: string) {
     setTitle(value);
     savePatch({ title: value });
-  }
-
-  async function handleStatusChange(value: BacklogStatus) {
-    setStatus(value);
-    await fetch(`/api/backlogs/${backlogId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: value }),
-    });
-    router.refresh();
   }
 
   async function handleLabelChange(value: BacklogLabel) {
@@ -148,23 +138,7 @@ export function BacklogEditor({
             </option>
           ))}
         </select>
-        <select
-          value={status}
-          onChange={(e) => handleStatusChange(e.target.value as BacklogStatus)}
-          aria-label="Status"
-          className={`rounded-md border-none px-2 py-1 text-xs font-medium outline-none ${STATUS_META[status].className}`}
-        >
-          {BACKLOG_STATUSES.map((value) => (
-            <option
-              key={value}
-              value={value}
-              disabled={value === "created"}
-              className="bg-background text-foreground"
-            >
-              {STATUS_META[value].label}
-            </option>
-          ))}
-        </select>
+        <BacklogStatusSelect backlogId={backlogId} initialStatus={initialStatus} />
       </div>
 
       <Toolbar editor={editor} />

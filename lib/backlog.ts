@@ -12,6 +12,6 @@ export const STATUS_META: Record<BacklogStatus, { label: string; className: stri
 };
 
 export const LABEL_META: Record<BacklogLabel, { label: string; className: string }> = {
-  task: { label: "Task", className: "bg-foreground/10 text-foreground/60" },
-  issue: { label: "Issue", className: "bg-red-500/10 text-red-500" },
+  task: { label: "Task", className: "bg-red-500/10 text-red-500" },
+  issue: { label: "Issue", className: "bg-yellow-500/10 text-yellow-500" },
 };

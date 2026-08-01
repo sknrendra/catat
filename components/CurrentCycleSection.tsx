@@ -54,7 +54,7 @@ export function CurrentCycleSection({
           <p className="text-sm text-foreground/50">No current active cycle</p>
           <button
             onClick={() => setShowModal(true)}
-            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
+            className="cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background"
           >
             + New Cycle
           </button>

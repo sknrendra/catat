@@ -92,7 +92,7 @@ export function CycleView({
           <button
             onClick={() => handleTransition("active")}
             disabled={transitioning}
-            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
+            className="cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
           >
             Start Cycle
           </button>
@@ -129,14 +129,14 @@ export function CycleView({
             <button
               onClick={handleCancel}
               disabled={saving}
-              className="rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-foreground/10 disabled:opacity-50"
+              className="cursor-pointer rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-foreground/10 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-md px-2 py-1 text-xs font-medium hover:bg-foreground/10 disabled:opacity-50"
+              className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium hover:bg-foreground/10 disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save"}
             </button>
@@ -145,7 +145,7 @@ export function CycleView({
       ) : (
         <button
           onClick={startEditing}
-          className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-foreground/5"
+          className="block w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm hover:bg-foreground/5"
         >
           {description ? (
             <p className="whitespace-pre-wrap text-foreground/80">{description}</p>

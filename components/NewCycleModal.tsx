@@ -82,7 +82,7 @@ export function NewCycleModal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-md px-2 py-1 text-sm text-foreground/50 hover:bg-foreground/10"
+            className="cursor-pointer rounded-md px-2 py-1 text-sm text-foreground/50 hover:bg-foreground/10"
           >
             ✕
           </button>
@@ -158,14 +158,14 @@ export function NewCycleModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-sm text-foreground/60 hover:bg-foreground/10"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-sm text-foreground/60 hover:bg-foreground/10"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
+            className="cursor-pointer rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-50"
           >
             {submitting ? "Creating…" : "Create"}
           </button>

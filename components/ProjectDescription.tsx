@@ -61,14 +61,14 @@ export function ProjectDescription({
           <button
             onClick={handleCancel}
             disabled={saving}
-            className="rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-foreground/10 disabled:opacity-50"
+            className="cursor-pointer rounded-md px-2 py-1 text-xs text-foreground/50 hover:bg-foreground/10 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md px-2 py-1 text-xs font-medium hover:bg-foreground/10 disabled:opacity-50"
+            className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium hover:bg-foreground/10 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -80,7 +80,7 @@ export function ProjectDescription({
   return (
     <button
       onClick={startEditing}
-      className="mb-6 block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-foreground/5"
+      className="mb-6 block w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm hover:bg-foreground/5"
     >
       {description ? (
         <p className="whitespace-pre-wrap text-foreground/80">{description}</p>

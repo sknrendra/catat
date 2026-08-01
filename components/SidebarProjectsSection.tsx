@@ -91,7 +91,7 @@ export function SidebarProjectsSection({
         <button
           onClick={() => setShowNewProjectInput((prev) => !prev)}
           aria-label="New project"
-          className="rounded-md px-1.5 text-sm hover:bg-foreground/10"
+          className="cursor-pointer rounded-md px-1.5 text-sm hover:bg-foreground/10"
         >
           +
         </button>
@@ -144,13 +144,13 @@ export function SidebarProjectsSection({
                 <span className="flex shrink-0 gap-1">
                   <button
                     onClick={() => handleDeleteProject(project)}
-                    className="rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
+                    className="cursor-pointer rounded-md px-2 py-1 text-red-500 hover:bg-red-500/10"
                   >
                     Confirm
                   </button>
                   <button
                     onClick={() => setConfirmingDeleteId(null)}
-                    className="rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
+                    className="cursor-pointer rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
                   >
                     Cancel
                   </button>
@@ -173,7 +173,7 @@ export function SidebarProjectsSection({
               <button
                 onClick={() => setOpenMenuId((prev) => (prev === project.id ? null : project.id))}
                 aria-label={`Options for ${project.title}`}
-                className={`shrink-0 rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
+                className={`shrink-0 cursor-pointer rounded-md px-1.5 py-1 text-xs text-foreground/40 hover:bg-foreground/10 hover:text-foreground ${
                   openMenuId === project.id ? "" : "opacity-0 group-hover:opacity-100"
                 }`}
               >
@@ -191,13 +191,13 @@ export function SidebarProjectsSection({
                   <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
                     <button
                       onClick={() => startRename(project)}
-                      className="px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                      className="cursor-pointer px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
                     >
                       Rename
                     </button>
                     <button
                       onClick={() => startDelete(project)}
-                      className="px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                      className="cursor-pointer px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
                     >
                       Delete
                     </button>

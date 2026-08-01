@@ -113,7 +113,7 @@ function ToolbarButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`flex h-8 w-8 items-center justify-center rounded-md text-sm hover:bg-foreground/10 ${
+      className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-sm hover:bg-foreground/10 ${
         active ? "bg-foreground/10 font-semibold" : ""
       }`}
     >

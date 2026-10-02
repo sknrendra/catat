@@ -11,29 +11,37 @@ import { useDebouncedCallback } from "@/lib/hooks/useDebouncedCallback";
 import { Toolbar } from "@/components/editor/EditorToolbar";
 import { clipboardTextSerializer } from "@/components/editor/clipboard";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { ShareButton } from "@/components/ShareButton";
 
+/**
+ * Without `owner`, the editor runs in public mode for a shared note: it saves
+ * through the public API and hides the notebook picker, sharing and delete.
+ */
 export function Editor({
   noteId,
-  notebookId,
-  notebooks,
   initialTitle,
   initialContent,
+  owner,
 }: {
   noteId: string;
-  notebookId: string;
-  notebooks: { id: string; name: string }[];
   initialTitle: string;
   initialContent: JSONContent;
+  owner?: {
+    notebookId: string;
+    notebooks: { id: string; name: string }[];
+    initialIsPublic: boolean;
+  };
 }) {
   const router = useRouter();
+  const apiBase = owner ? "/api/notes" : "/api/public/notes";
   const [title, setTitle] = useState(initialTitle);
-  const [currentNotebookId, setCurrentNotebookId] = useState(notebookId);
+  const [currentNotebookId, setCurrentNotebookId] = useState(owner?.notebookId ?? "");
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const savePatch = useDebouncedCallback(async (body: Record<string, unknown>) => {
     setSaveState("saving");
-    await fetch(`/api/notes/${noteId}`, {
+    await fetch(`${apiBase}/${noteId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -79,7 +87,7 @@ export function Editor({
   async function handleImageUpload(file: File) {
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch(`/api/notes/${noteId}/attachments`, {
+    const res = await fetch(`${apiBase}/${noteId}/attachments`, {
       method: "POST",
       body: form,
     });
@@ -106,22 +114,29 @@ export function Editor({
           className="w-full bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-foreground/30"
         />
         <div className="flex shrink-0 items-center gap-3 md:pt-2">
-          <select
-            value={currentNotebookId}
-            onChange={(e) => handleNotebookChange(e.target.value)}
-            aria-label="Notebook"
-            className="rounded-md border border-foreground/20 bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-foreground/60"
-          >
-            {notebooks.map((notebook) => (
-              <option key={notebook.id} value={notebook.id} className="bg-background text-foreground">
-                {notebook.name}
-              </option>
-            ))}
-          </select>
+          {owner && (
+            <select
+              value={currentNotebookId}
+              onChange={(e) => handleNotebookChange(e.target.value)}
+              aria-label="Notebook"
+              className="rounded-md border border-foreground/20 bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-foreground/60"
+            >
+              {owner.notebooks.map((notebook) => (
+                <option key={notebook.id} value={notebook.id} className="bg-background text-foreground">
+                  {notebook.name}
+                </option>
+              ))}
+            </select>
+          )}
           <span className="text-xs text-foreground/40">
             {saveState === "saving" ? "Saving…" : "Saved"}
           </span>
-          <ConfirmButton label="Delete" confirmLabel="Confirm?" onConfirm={handleDelete} />
+          {owner && (
+            <>
+              <ShareButton noteId={noteId} initialIsPublic={owner.initialIsPublic} />
+              <ConfirmButton label="Delete" confirmLabel="Confirm?" onConfirm={handleDelete} />
+            </>
+          )}
         </div>
       </div>
 

@@ -31,8 +31,14 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
 
-  const updates: Partial<{ title: string; content: unknown; notebookId: string }> = {};
+  const updates: Partial<{
+    title: string;
+    content: unknown;
+    notebookId: string;
+    isPublic: boolean;
+  }> = {};
   if (typeof body.title === "string") updates.title = body.title;
+  if (typeof body.isPublic === "boolean") updates.isPublic = body.isPublic;
   if (body.content !== undefined) updates.content = body.content;
   if (typeof body.notebookId === "string") {
     const [notebook] = await db

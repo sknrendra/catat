@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const PUBLIC_PATHS = ["/sign-in", "/sign-up"];
+// Trailing slashes matter: these are prefix matches, and a bare "/p" would
+// also match "/projects". Public note routes check `isPublic` themselves.
+const PUBLIC_PATHS = [
+  "/sign-in",
+  "/sign-up",
+  "/p/",
+  "/api/public/",
+  "/api/attachments/",
+];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

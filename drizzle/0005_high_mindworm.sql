@@ -1,0 +1,1 @@
+ALTER TABLE `notes` ADD `is_public` integer DEFAULT false NOT NULL;

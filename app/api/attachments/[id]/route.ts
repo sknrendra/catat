@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Readable } from "node:stream";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { attachments, notes } from "@/lib/db/schema";
 import { getUserId } from "@/lib/session";
@@ -11,7 +11,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const userId = await getUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   const [attachment] = await db
@@ -20,12 +19,17 @@ export async function GET(
       minioKey: attachments.minioKey,
       mimeType: attachments.mimeType,
       fileName: attachments.fileName,
+      noteUserId: notes.userId,
+      noteIsPublic: notes.isPublic,
     })
     .from(attachments)
     .innerJoin(notes, eq(attachments.noteId, notes.id))
-    .where(and(eq(attachments.id, id), eq(notes.userId, userId)));
+    .where(eq(attachments.id, id));
 
-  if (!attachment) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Readable by the note's owner, or by anyone if the note is shared.
+  if (!attachment || (attachment.noteUserId !== userId && !attachment.noteIsPublic)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const objectStream = await minioClient.getObject(MINIO_BUCKET, attachment.minioKey);
 

@@ -33,10 +33,13 @@ export default async function NotePage({
       <Editor
         key={note.id}
         noteId={note.id}
-        notebookId={note.notebookId}
-        notebooks={notebookRows}
         initialTitle={note.title}
         initialContent={note.content as JSONContent}
+        owner={{
+          notebookId: note.notebookId,
+          notebooks: notebookRows,
+          initialIsPublic: note.isPublic,
+        }}
       />
     </div>
   );

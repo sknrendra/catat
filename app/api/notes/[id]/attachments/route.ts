@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { attachments, notes } from "@/lib/db/schema";
+import { notes } from "@/lib/db/schema";
 import { getUserId } from "@/lib/session";
-import { ensureBucket, minioClient, MINIO_BUCKET } from "@/lib/minio";
+import { uploadAttachment } from "@/lib/attachments";
 
 export async function POST(
   request: NextRequest,
@@ -25,30 +25,5 @@ export async function POST(
     return NextResponse.json({ error: "file is required" }, { status: 400 });
   }
 
-  await ensureBucket();
-
-  const attachmentId = crypto.randomUUID();
-  const minioKey = `${noteId}/${attachmentId}-${file.name}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await minioClient.putObject(MINIO_BUCKET, minioKey, buffer, buffer.length, {
-    "Content-Type": file.type || "application/octet-stream",
-  });
-
-  const [attachment] = await db
-    .insert(attachments)
-    .values({
-      id: attachmentId,
-      noteId,
-      minioKey,
-      fileName: file.name,
-      mimeType: file.type || "application/octet-stream",
-      size: buffer.length,
-    })
-    .returning();
-
-  return NextResponse.json({
-    ...attachment,
-    url: `/api/attachments/${attachment.id}`,
-  });
+  return NextResponse.json(await uploadAttachment(noteId, file));
 }

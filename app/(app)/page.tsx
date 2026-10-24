@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notebooks, notes, projects } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
@@ -15,9 +15,11 @@ export default async function AppHomePage() {
       title: notes.title,
       updatedAt: notes.updatedAt,
       notebookName: notebooks.name,
+      projectTitle: projects.title,
     })
     .from(notes)
     .innerJoin(notebooks, eq(notes.notebookId, notebooks.id))
+    .leftJoin(projects, eq(notebooks.projectId, projects.id))
     .where(eq(notes.userId, userId))
     .orderBy(desc(notes.updatedAt))
     .limit(8);
@@ -25,7 +27,7 @@ export default async function AppHomePage() {
   const recentNotebooks = await db
     .select()
     .from(notebooks)
-    .where(eq(notebooks.userId, userId))
+    .where(and(eq(notebooks.userId, userId), isNull(notebooks.projectId)))
     .orderBy(desc(notebooks.updatedAt))
     .limit(5);
 
@@ -65,7 +67,7 @@ export default async function AppHomePage() {
                     >
                       <span className="truncate text-sm">{note.title || "Untitled"}</span>
                       <span className="flex shrink-0 items-center gap-3 text-xs text-foreground/40">
-                        <span className="truncate">{note.notebookName}</span>
+                        <span className="truncate">{note.projectTitle ?? note.notebookName}</span>
                         <span>{new Date(note.updatedAt).toLocaleDateString()}</span>
                       </span>
                     </Link>

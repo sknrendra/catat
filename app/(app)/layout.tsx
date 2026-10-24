@@ -1,4 +1,4 @@
-import { eq, asc, desc } from "drizzle-orm";
+import { and, eq, asc, desc, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notebooks, notes, projects } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const notebookRows = await db
     .select()
     .from(notebooks)
-    .where(eq(notebooks.userId, userId))
+    .where(and(eq(notebooks.userId, userId), isNull(notebooks.projectId)))
     .orderBy(asc(notebooks.sortOrder), desc(notebooks.createdAt));
 
   const noteRows = await db

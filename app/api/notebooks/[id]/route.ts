@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notebooks } from "@/lib/db/schema";
 import { getUserId } from "@/lib/session";
@@ -19,7 +19,7 @@ export async function PATCH(
   const [notebook] = await db
     .update(notebooks)
     .set({ name })
-    .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)))
+    .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId), isNull(notebooks.projectId)))
     .returning();
 
   if (!notebook) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -37,7 +37,8 @@ export async function DELETE(
   const [existing] = await db
     .select({ name: notebooks.name })
     .from(notebooks)
-    .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId)));
+    // Project notebooks go away with their project, not on their own.
+    .where(and(eq(notebooks.id, id), eq(notebooks.userId, userId), isNull(notebooks.projectId)));
 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (existing.name === "General") {

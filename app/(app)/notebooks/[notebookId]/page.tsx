@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { notebooks, notes } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
@@ -20,6 +20,7 @@ export default async function NotebookPage({
     .where(and(eq(notebooks.id, notebookId), eq(notebooks.userId, userId)));
 
   if (!notebook) notFound();
+  if (notebook.projectId) redirect(`/projects/${notebook.projectId}`);
 
   const noteRows = await db
     .select({

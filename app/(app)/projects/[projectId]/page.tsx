@@ -1,11 +1,12 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { backlogs, cycleBacklogs, cycles, projects } from "@/lib/db/schema";
+import { backlogs, cycleBacklogs, cycles, notebooks, notes, projects } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
 import { BacklogList } from "@/components/BacklogList";
 import { CurrentCycleSection } from "@/components/CurrentCycleSection";
 import { ProjectDescription } from "@/components/ProjectDescription";
+import { ProjectNotes } from "@/components/ProjectNotes";
 
 export default async function ProjectPage({
   params,
@@ -66,6 +67,13 @@ export default async function ProjectPage({
       )
     : new Set<string>();
 
+  const noteRows = await db
+    .select({ id: notes.id, title: notes.title, updatedAt: notes.updatedAt })
+    .from(notes)
+    .innerJoin(notebooks, eq(notes.notebookId, notebooks.id))
+    .where(and(eq(notebooks.projectId, projectId), eq(notes.userId, userId)))
+    .orderBy(desc(notes.updatedAt));
+
   const cycleItems = backlogRows.filter((b) => cycleItemIds.has(b.id));
   const remainingBacklogs = backlogRows.filter((b) => !cycleItemIds.has(b.id));
 
@@ -79,6 +87,7 @@ export default async function ProjectPage({
         items={cycleItems}
         backlogs={backlogRows}
       />
+      <ProjectNotes projectId={project.id} notes={noteRows} />
       <BacklogList projectId={project.id} backlogs={remainingBacklogs} />
     </div>
   );

@@ -12,22 +12,27 @@ import { Toolbar } from "@/components/editor/EditorToolbar";
 import { clipboardTextSerializer } from "@/components/editor/clipboard";
 import { ConfirmButton } from "@/components/ConfirmButton";
 
+// A note lives either in a notebook or in a project.
+type NoteLocation = { kind: "notebook" | "project"; id: string };
+
 export function Editor({
   noteId,
-  notebookId,
+  location,
   notebooks,
+  projects,
   initialTitle,
   initialContent,
 }: {
   noteId: string;
-  notebookId: string;
+  location: NoteLocation;
   notebooks: { id: string; name: string }[];
+  projects: { id: string; title: string }[];
   initialTitle: string;
   initialContent: JSONContent;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
-  const [currentNotebookId, setCurrentNotebookId] = useState(notebookId);
+  const [currentLocation, setCurrentLocation] = useState(location);
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,12 +71,13 @@ export function Editor({
     savePatch({ title: value });
   }
 
-  async function handleNotebookChange(newNotebookId: string) {
-    setCurrentNotebookId(newNotebookId);
+  async function handleLocationChange(value: string) {
+    const [kind, id] = value.split(":") as [NoteLocation["kind"], string];
+    setCurrentLocation({ kind, id });
     await fetch(`/api/notes/${noteId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notebookId: newNotebookId }),
+      body: JSON.stringify(kind === "project" ? { projectId: id } : { notebookId: id }),
     });
     router.refresh();
   }
@@ -90,7 +96,11 @@ export function Editor({
 
   async function handleDelete() {
     await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
-    router.push(`/notebooks/${currentNotebookId}`);
+    router.push(
+      currentLocation.kind === "project"
+        ? `/projects/${currentLocation.id}`
+        : `/notebooks/${currentLocation.id}`,
+    );
     router.refresh();
   }
 
@@ -107,16 +117,35 @@ export function Editor({
         />
         <div className="flex shrink-0 items-center gap-3 md:pt-2">
           <select
-            value={currentNotebookId}
-            onChange={(e) => handleNotebookChange(e.target.value)}
-            aria-label="Notebook"
-            className="rounded-md border border-foreground/20 bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-foreground/60"
+            value={`${currentLocation.kind}:${currentLocation.id}`}
+            onChange={(e) => handleLocationChange(e.target.value)}
+            aria-label="Notebook or project"
+            className="max-w-48 rounded-md border border-foreground/20 bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-foreground/60"
           >
-            {notebooks.map((notebook) => (
-              <option key={notebook.id} value={notebook.id} className="bg-background text-foreground">
-                {notebook.name}
-              </option>
-            ))}
+            <optgroup label="Notebooks" className="bg-background text-foreground">
+              {notebooks.map((notebook) => (
+                <option
+                  key={notebook.id}
+                  value={`notebook:${notebook.id}`}
+                  className="bg-background text-foreground"
+                >
+                  {notebook.name}
+                </option>
+              ))}
+            </optgroup>
+            {projects.length > 0 && (
+              <optgroup label="Projects" className="bg-background text-foreground">
+                {projects.map((project) => (
+                  <option
+                    key={project.id}
+                    value={`project:${project.id}`}
+                    className="bg-background text-foreground"
+                  >
+                    {project.title}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
           <span className="text-xs text-foreground/40">
             {saveState === "saving" ? "Saving…" : "Saved"}

@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notebooks, notes } from "@/lib/db/schema";
 import { getUserId } from "@/lib/session";
+import { getOrCreateProjectNotebookId } from "@/lib/project-notebook";
 
 export async function GET(
   _request: NextRequest,
@@ -41,6 +42,10 @@ export async function PATCH(
       .where(and(eq(notebooks.id, body.notebookId), eq(notebooks.userId, userId)));
     if (!notebook) return NextResponse.json({ error: "Notebook not found" }, { status: 404 });
     updates.notebookId = body.notebookId;
+  } else if (typeof body.projectId === "string") {
+    const projectNotebookId = await getOrCreateProjectNotebookId(body.projectId, userId);
+    if (!projectNotebookId) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    updates.notebookId = projectNotebookId;
   }
 
   const [note] = await db

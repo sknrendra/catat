@@ -1,5 +1,12 @@
 import { relations, sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  index,
+  uniqueIndex,
+  type AnySQLiteColumn,
+} from "drizzle-orm/sqlite-core";
 
 // --- BetterAuth tables (generated via `npx @better-auth/cli generate`) ---
 
@@ -123,6 +130,10 @@ export const notebooks = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    // Set when this notebook holds a project's notes (including notebooks
+    // converted into a project). Such notebooks are hidden from the
+    // notebook lists and surface on the project page instead.
+    projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
@@ -132,7 +143,10 @@ export const notebooks = sqliteTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index("notebooks_userId_idx").on(table.userId)],
+  (table) => [
+    index("notebooks_userId_idx").on(table.userId),
+    uniqueIndex("notebooks_projectId_idx").on(table.projectId),
+  ],
 );
 
 export const notes = sqliteTable(
@@ -347,6 +361,10 @@ export const notebooksRelations = relations(notebooks, ({ one, many }) => ({
   user: one(user, {
     fields: [notebooks.userId],
     references: [user.id],
+  }),
+  project: one(projects, {
+    fields: [notebooks.projectId],
+    references: [projects.id],
   }),
   notes: many(notes),
 }));

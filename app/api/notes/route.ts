@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notebooks, notes } from "@/lib/db/schema";
 import { getUserId } from "@/lib/session";
+import { getOrCreateProjectNotebookId } from "@/lib/project-notebook";
 
 export async function GET(request: NextRequest) {
   const userId = await getUserId();
@@ -34,9 +35,14 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   let notebookId = typeof body.notebookId === "string" ? body.notebookId : "";
+  const projectId = typeof body.projectId === "string" ? body.projectId : "";
   const title = typeof body.title === "string" ? body.title : "";
 
-  if (notebookId) {
+  if (projectId) {
+    const projectNotebookId = await getOrCreateProjectNotebookId(projectId, userId);
+    if (!projectNotebookId) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    notebookId = projectNotebookId;
+  } else if (notebookId) {
     const [notebook] = await db
       .select({ id: notebooks.id })
       .from(notebooks)
@@ -49,7 +55,13 @@ export async function POST(request: NextRequest) {
     const [general] = await db
       .select({ id: notebooks.id })
       .from(notebooks)
-      .where(and(eq(notebooks.userId, userId), eq(notebooks.name, "General")));
+      .where(
+        and(
+          eq(notebooks.userId, userId),
+          eq(notebooks.name, "General"),
+          isNull(notebooks.projectId),
+        ),
+      );
     if (general) {
       notebookId = general.id;
     } else {

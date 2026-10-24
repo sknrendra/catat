@@ -50,6 +50,7 @@ export function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [confirmingConvertId, setConfirmingConvertId] = useState<string | null>(null);
   const [newNoteForId, setNewNoteForId] = useState<string | null>(null);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [creatingNote, setCreatingNote] = useState(false);
@@ -147,6 +148,21 @@ export function Sidebar({
     await fetch(`/api/notebooks/${notebook.id}`, { method: "DELETE" });
     if (params?.notebookId === notebook.id) router.push("/");
     router.refresh();
+  }
+
+  function startConvert(notebook: Notebook) {
+    setOpenMenuId(null);
+    setConfirmingConvertId(notebook.id);
+  }
+
+  async function handleConvertNotebook(notebook: Notebook) {
+    setConfirmingConvertId(null);
+    const res = await fetch(`/api/notebooks/${notebook.id}/convert`, { method: "POST" });
+    if (res.ok) {
+      const project = await res.json();
+      router.push(`/projects/${project.id}`);
+      router.refresh();
+    }
   }
 
   function startNewNote(notebook: Notebook) {
@@ -314,6 +330,33 @@ export function Sidebar({
                 );
               }
 
+              if (confirmingConvertId === notebook.id) {
+                return (
+                  <li
+                    key={notebook.id}
+                    className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs"
+                  >
+                    <span className="truncate text-foreground/60">
+                      Make “{notebook.name}” a project?
+                    </span>
+                    <span className="flex shrink-0 gap-1">
+                      <button
+                        onClick={() => handleConvertNotebook(notebook)}
+                        className="cursor-pointer rounded-md px-2 py-1 hover:bg-foreground/10"
+                      >
+                        Convert
+                      </button>
+                      <button
+                        onClick={() => setConfirmingConvertId(null)}
+                        className="cursor-pointer rounded-md px-2 py-1 text-foreground/50 hover:bg-foreground/10"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  </li>
+                );
+              }
+
               const expanded = expandedIds.has(notebook.id);
               const notebookNotes = notes.filter((note) => note.notebookId === notebook.id);
 
@@ -379,7 +422,7 @@ export function Sidebar({
                           className="fixed inset-0 z-10 cursor-default"
                           onClick={() => setOpenMenuId(null)}
                         />
-                        <div className="absolute top-full right-0 z-20 mt-1 flex w-32 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
+                        <div className="absolute top-full right-0 z-20 mt-1 flex w-40 flex-col overflow-hidden rounded-md border border-foreground/20 bg-background py-1 shadow-lg">
                           <button
                             onClick={() => startNewNote(notebook)}
                             className="cursor-pointer px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
@@ -393,12 +436,20 @@ export function Sidebar({
                             Rename
                           </button>
                           {notebook.name !== "General" && (
-                            <button
-                              onClick={() => startDelete(notebook)}
-                              className="cursor-pointer px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
-                            >
-                              Delete
-                            </button>
+                            <>
+                              <button
+                                onClick={() => startConvert(notebook)}
+                                className="cursor-pointer px-3 py-1.5 text-left text-sm hover:bg-foreground/10"
+                              >
+                                Convert to project
+                              </button>
+                              <button
+                                onClick={() => startDelete(notebook)}
+                                className="cursor-pointer px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-500/10"
+                              >
+                                Delete
+                              </button>
+                            </>
                           )}
                         </div>
                       </>

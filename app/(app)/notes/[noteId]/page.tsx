@@ -1,8 +1,8 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import type { JSONContent } from "@tiptap/core";
 import { db } from "@/lib/db";
-import { notebooks, notes } from "@/lib/db/schema";
+import { notebooks, notes, projects } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
 import { Editor } from "@/components/Editor";
 
@@ -25,16 +25,32 @@ export default async function NotePage({
   const notebookRows = await db
     .select({ id: notebooks.id, name: notebooks.name })
     .from(notebooks)
-    .where(eq(notebooks.userId, userId))
+    .where(and(eq(notebooks.userId, userId), isNull(notebooks.projectId)))
     .orderBy(desc(notebooks.createdAt));
+
+  const projectRows = await db
+    .select({ id: projects.id, title: projects.title })
+    .from(projects)
+    .where(eq(projects.userId, userId))
+    .orderBy(desc(projects.createdAt));
+
+  const [currentNotebook] = await db
+    .select({ projectId: notebooks.projectId })
+    .from(notebooks)
+    .where(eq(notebooks.id, note.notebookId));
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <Editor
         key={note.id}
         noteId={note.id}
-        notebookId={note.notebookId}
+        location={
+          currentNotebook?.projectId
+            ? { kind: "project", id: currentNotebook.projectId }
+            : { kind: "notebook", id: note.notebookId }
+        }
         notebooks={notebookRows}
+        projects={projectRows}
         initialTitle={note.title}
         initialContent={note.content as JSONContent}
       />
